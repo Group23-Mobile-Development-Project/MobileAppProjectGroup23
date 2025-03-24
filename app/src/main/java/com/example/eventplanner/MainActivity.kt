@@ -108,7 +108,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 }
             )
         }) {
-            Text(text = "Sign in - Google")
+            Text(text = "Google SignIn")
         }
     }
 }
