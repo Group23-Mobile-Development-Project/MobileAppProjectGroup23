@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.eventplanner.ui.theme.EventPlannerTheme
 import kotlinx.coroutines.delay
-import com.example.eventplanner.R
+//import com.example.eventplanner.R
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
