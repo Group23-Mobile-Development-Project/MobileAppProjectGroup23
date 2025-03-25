@@ -19,9 +19,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
+import com.example.eventplanner.navigation.AppNavGraph
 import com.example.eventplanner.ui.theme.EventPlannerTheme
 import kotlinx.coroutines.delay
-//import com.example.eventplanner.R
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,6 +33,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             EventPlannerTheme {
                 var isSplashVisible by remember { mutableStateOf(true) }
+                val navController = rememberNavController() // Initialize NavController
 
                 LaunchedEffect(Unit) {
                     delay(2000) // Simulate loading time
@@ -41,7 +44,10 @@ class MainActivity : ComponentActivity() {
                     SplashScreen()
                 } else {
                     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                        MainScreen(modifier = Modifier.padding(innerPadding))
+                        AppNavGraph(
+                            navController = navController, // Pass NavController to Navigation Graph
+                            modifier = Modifier.padding(innerPadding)
+                        )
                     }
                 }
             }
@@ -74,41 +80,6 @@ fun SplashScreen() {
         Spacer(modifier = Modifier.height(32.dp))
         Button(onClick = { /* Navigate to next screen */ }) {
             Text(text = "Get Started")
-        }
-    }
-}
-
-@Composable
-fun MainScreen(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
-        GoogleSignInUtils.doGoogleSignIn(
-            context = context,
-            scope = scope,
-            launcher = null,
-            login = {
-                Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
-            }
-        )
-    }
-
-    Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Button(onClick = {
-            GoogleSignInUtils.doGoogleSignIn(
-                context = context,
-                scope = scope,
-                launcher = launcher,
-                login = {
-                    Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
-                }
-            )
-        }) {
-            Text(text = "Google SignIn")
         }
     }
 }
