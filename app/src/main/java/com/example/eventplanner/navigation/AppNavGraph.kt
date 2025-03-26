@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.eventplanner.screens.LoginScreen
+import com.example.eventplanner.ui.screens.HomeScreen
 import com.example.eventplanner.screens.SignupScreen
 
 @Composable
@@ -15,7 +16,14 @@ fun AppNavGraph(navController: NavHostController, modifier: Modifier = Modifier)
         startDestination = "login",
         modifier = modifier
     ) {
-        composable("login") { LoginScreen(navController) }
-        composable("signup") { SignupScreen(navController) }
+        composable("login") {
+            LoginScreen(navController)
+        }
+        composable("signup") {
+            SignupScreen(navController)
+        }
+        composable("home") {
+            HomeScreen()
+        }
     }
 }

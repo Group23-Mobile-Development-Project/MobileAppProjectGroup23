@@ -1,33 +1,39 @@
-package com.example.eventplanner
+package com.example.eventplanner.utils
 
-import android.content.Context
-import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 
 object AuthUtils {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    fun signUpWithEmail(context: Context, email: String, password: String, onSuccess: () -> Unit) {
+    fun signUpUser(
+        email: String,
+        password: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     onSuccess()
-                    Toast.makeText(context, "Signup Successful!", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, "Signup Failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                    onFailure(task.exception?.message ?: "Signup failed")
                 }
             }
     }
 
-    fun loginWithEmail(context: Context, email: String, password: String, onSuccess: () -> Unit) {
+    fun loginUser(
+        email: String,
+        password: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     onSuccess()
-                    Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, "Login Failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                    onFailure(task.exception?.message ?: "Login failed")
                 }
             }
     }
