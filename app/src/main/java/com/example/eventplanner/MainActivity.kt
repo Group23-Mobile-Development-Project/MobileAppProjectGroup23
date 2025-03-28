@@ -1,27 +1,22 @@
 package com.example.eventplanner
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.eventplanner.navigation.AppNavGraph
+import com.example.eventplanner.ui.navigation.AppNavGraph
 import com.example.eventplanner.ui.theme.EventPlannerTheme
 import kotlinx.coroutines.delay
 
@@ -35,23 +30,31 @@ class MainActivity : ComponentActivity() {
                 var isSplashVisible by remember { mutableStateOf(true) }
                 val navController = rememberNavController() // Initialize NavController
 
+                // Simulate a loading delay for splash screen
                 LaunchedEffect(Unit) {
-                    delay(2000) // Simulate loading time
+                    delay(2000)
                     isSplashVisible = false
                 }
 
                 if (isSplashVisible) {
                     SplashScreen()
                 } else {
-                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                        AppNavGraph(
-                            navController = navController, // Pass NavController to Navigation Graph
-                            modifier = Modifier.padding(innerPadding)
-                        )
-                    }
+                    MainScreen(navController)
                 }
             }
         }
+    }
+}
+
+@Composable
+fun MainScreen(navController: androidx.navigation.NavHostController) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize()
+    ) { innerPadding ->
+        AppNavGraph(
+            navController = navController, // Pass NavController to Navigation Graph
+            modifier = Modifier.padding(innerPadding)
+        )
     }
 }
 
@@ -78,8 +81,5 @@ fun SplashScreen() {
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "Organize and manage your events effortlessly with us!")
         Spacer(modifier = Modifier.height(32.dp))
-        Button(onClick = { /* Navigate to next screen */ }) {
-            Text(text = "Get Started")
-        }
     }
 }

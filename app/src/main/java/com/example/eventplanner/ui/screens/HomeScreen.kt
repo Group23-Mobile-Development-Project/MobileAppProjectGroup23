@@ -21,7 +21,7 @@ data class Event(val title: String, val date: String, val rsvpStatus: String, va
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(navController: NavController) {
     val events = listOf(
         Event("Jazz Night", "Oct 14, 2023", "RSVP: Yes", R.drawable.jazz_night),
         Event("Art Exhibit", "Oct 20, 2023", "RSVP: No", R.drawable.art_exhibit),
