@@ -11,7 +11,25 @@ import com.example.eventplanner.screens.LoginScreen
 import com.example.eventplanner.ui.screens.HomeScreen
 import com.example.eventplanner.screens.SignupScreen
 import com.example.eventplanner.ui.components.BottomNavBar
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.*
+
+@Composable
+fun EventsScreen(navController: NavHostController) {
+    // Placeholder UI for the EventsScreen
+    Text("Events Screen is under construction.")
+}
+
+@Composable
+fun ParticipationScreen(navController: NavHostController) {
+    // Placeholder UI for the EventsScreen
+    Text("Participation Screen is under construction.")
+}
+
+@Composable
+fun ProfileScreen(navController: NavHostController) {
+    // Placeholder UI for the EventsScreen
+    Text("profile Screen is under construction.")
+}
 
 @Composable
 fun AppNavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
@@ -38,6 +56,16 @@ fun AppNavGraph(navController: NavHostController, modifier: Modifier = Modifier)
             }
             composable("home") {
                 HomeScreen(navController)
+            }
+            composable("events") {
+                EventsScreen(navController)  // Define your EventsScreen composable here
+            }
+            composable("participation") {
+                ParticipationScreen(navController)  // You need to create this screen
+            }
+
+            composable("profile") {
+                ProfileScreen(navController)  // You need to create this screen
             }
             // Add other composable screens as needed
         }
