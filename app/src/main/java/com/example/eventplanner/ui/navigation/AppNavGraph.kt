@@ -12,12 +12,10 @@ import com.example.eventplanner.ui.screens.HomeScreen
 import com.example.eventplanner.screens.SignupScreen
 import com.example.eventplanner.ui.components.BottomNavBar
 import androidx.compose.material3.*
+import com.example.eventplanner.ui.screens.EventScreen
 
-@Composable
-fun EventsScreen(navController: NavHostController) {
-    // Placeholder UI for the EventsScreen
-    Text("Events Screen is under construction.")
-}
+
+
 
 @Composable
 fun ParticipationScreen(navController: NavHostController) {
@@ -58,7 +56,7 @@ fun AppNavGraph(navController: NavHostController, modifier: Modifier = Modifier)
                 HomeScreen(navController)
             }
             composable("events") {
-                EventsScreen(navController)  // Define your EventsScreen composable here
+                EventScreen()  // Ensure it correctly points to EventScreen
             }
             composable("participation") {
                 ParticipationScreen(navController)  // You need to create this screen
