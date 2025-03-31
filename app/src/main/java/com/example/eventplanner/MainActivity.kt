@@ -18,9 +18,13 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
 import com.example.eventplanner.ui.navigation.AppNavGraph
 import com.example.eventplanner.ui.theme.EventPlannerTheme
+//import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
+
+    val db=FirebaseFirestore.getInstance()
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen() // Enables splash screen
         super.onCreate(savedInstanceState)

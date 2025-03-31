@@ -78,6 +78,9 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.auth.ktx)
 
+    // Firestore database
+    implementation(libs.firebase.firestore.ktx)
+
     // Google Sign-In & Credentials API
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
