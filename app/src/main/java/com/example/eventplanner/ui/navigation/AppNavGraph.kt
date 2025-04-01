@@ -14,6 +14,8 @@ import com.example.eventplanner.ui.components.BottomNavBar
 import androidx.compose.material3.*
 import com.example.eventplanner.ui.screens.EventScreen
 import com.example.eventplanner.ui.screens.ProfileScreen
+import com.example.eventplanner.ui.screens.ParticipationScreen
+
 
 
 @Composable
@@ -46,6 +48,9 @@ fun AppNavGraph(navController: NavHostController, modifier: Modifier = Modifier)
             }
             composable("profile") {
                 ProfileScreen(navController)
+            }
+            composable("participation") {
+                ParticipationScreen()
             }
         }
     }
