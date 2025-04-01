@@ -18,13 +18,13 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
 import com.example.eventplanner.ui.navigation.AppNavGraph
 import com.example.eventplanner.ui.theme.EventPlannerTheme
-//import com.google.firebase.Firebase
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
 
-    val db=FirebaseFirestore.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()  // Firebase Authentication instance
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen() // Enables splash screen
         super.onCreate(savedInstanceState)
@@ -52,6 +52,20 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(navController: androidx.navigation.NavHostController) {
+    val auth = FirebaseAuth.getInstance()
+    val isUserLoggedIn = auth.currentUser != null
+
+    // If user is already logged in, navigate to the home screen
+    LaunchedEffect(isUserLoggedIn) {
+        if (isUserLoggedIn) {
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
+        } else {
+            navController.navigate("login")
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
