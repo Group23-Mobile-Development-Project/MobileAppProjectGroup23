@@ -13,28 +13,14 @@ import com.example.eventplanner.screens.SignupScreen
 import com.example.eventplanner.ui.components.BottomNavBar
 import androidx.compose.material3.*
 import com.example.eventplanner.ui.screens.EventScreen
+import com.example.eventplanner.ui.screens.ProfileScreen
 
-
-
-
-@Composable
-fun ParticipationScreen(navController: NavHostController) {
-    // Placeholder UI for the EventsScreen
-    Text("Participation Screen is under construction.")
-}
-
-@Composable
-fun ProfileScreen(navController: NavHostController) {
-    // Placeholder UI for the EventsScreen
-    Text("profile Screen is under construction.")
-}
 
 @Composable
 fun AppNavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            // Only show the BottomNavBar if the current route is not 'login' or 'signup'
             val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
             if (currentRoute != "login" && currentRoute != "signup") {
                 BottomNavBar(navController)
@@ -56,16 +42,11 @@ fun AppNavGraph(navController: NavHostController, modifier: Modifier = Modifier)
                 HomeScreen(navController)
             }
             composable("events") {
-                EventScreen()  // Ensure it correctly points to EventScreen
+                EventScreen()
             }
-            composable("participation") {
-                ParticipationScreen(navController)  // You need to create this screen
-            }
-
             composable("profile") {
-                ProfileScreen(navController)  // You need to create this screen
+                ProfileScreen(navController)
             }
-            // Add other composable screens as needed
         }
     }
 }

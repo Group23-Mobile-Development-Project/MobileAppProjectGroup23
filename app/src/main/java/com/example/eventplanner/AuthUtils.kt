@@ -1,17 +1,13 @@
 package com.example.eventplanner.utils
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 
 object AuthUtils {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    fun signUpUser(
-        email: String,
-        password: String,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
+    fun signUpUser(email: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -22,12 +18,7 @@ object AuthUtils {
             }
     }
 
-    fun loginUser(
-        email: String,
-        password: String,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
+    fun loginUser(email: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -38,7 +29,16 @@ object AuthUtils {
             }
     }
 
-    fun logout() {
+    fun logout(onSuccess: () -> Unit) {
         auth.signOut()
+        onSuccess()
+    }
+
+    fun getCurrentUser(): FirebaseUser? {
+        return auth.currentUser
+    }
+
+    fun isUserLoggedIn(): Boolean {
+        return auth.currentUser != null
     }
 }
