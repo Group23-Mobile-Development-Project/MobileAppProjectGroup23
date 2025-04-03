@@ -14,14 +14,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.eventplanner.utils.EmailAuthUtils
+import com.example.eventplanner.utils.AuthUtils
 
 @Composable
 fun SignupScreen(navController: NavController) {
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) } // Toggle for password visibility
+    var passwordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -54,10 +55,32 @@ fun SignupScreen(navController: NavController) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = {
-            EmailAuthUtils.registerUser(context, email, password)
-        }) {
-            Text(text = "Sign Up")
+        Button(
+            onClick = {
+                isLoading = true
+                AuthUtils.signUpUser(
+                    email = email,
+                    password = password,
+                    onSuccess = {
+                        isLoading = false
+                        Toast.makeText(context, "Signup successful! Redirecting to login...", Toast.LENGTH_SHORT).show()
+                        navController.navigate("login") {
+                            popUpTo("signup") { inclusive = true }
+                        }
+                    },
+                    onFailure = { errorMessage ->
+                        isLoading = false
+                        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+                    }
+                )
+            },
+            enabled = !isLoading
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            } else {
+                Text(text = "Sign Up")
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
