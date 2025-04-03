@@ -47,9 +47,14 @@ object AuthUtils {
             db.collection("users").document(user.uid).get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
-                        onSuccess(document.data)
+                        val data = document.data
+                        if (data != null && data.containsKey("email") && data.containsKey("name")) {
+                            onSuccess(data)
+                        } else {
+                            onFailure("Profile data is incomplete.")
+                        }
                     } else {
-                        onFailure("User profile not found.")
+                        onFailure("User profile not found in Firestore.")
                     }
                 }
                 .addOnFailureListener { e ->
@@ -64,9 +69,23 @@ object AuthUtils {
     fun updateUserProfile(updatedData: Map<String, Any>, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         val user = auth.currentUser
         if (user != null) {
-            db.collection("users").document(user.uid).update(updatedData)
-                .addOnSuccessListener { onSuccess() }
-                .addOnFailureListener { e -> onFailure(e.message ?: "Failed to update profile.") }
+            val userDocRef = db.collection("users").document(user.uid)
+
+            userDocRef.get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        userDocRef.update(updatedData)
+                            .addOnSuccessListener { onSuccess() }
+                            .addOnFailureListener { e ->
+                                onFailure(e.message ?: "Failed to update profile.")
+                            }
+                    } else {
+                        onFailure("User document does not exist.")
+                    }
+                }
+                .addOnFailureListener { e ->
+                    onFailure(e.message ?: "Error checking user document existence.")
+                }
         } else {
             onFailure("No authenticated user found.")
         }

@@ -14,16 +14,17 @@ import com.example.eventplanner.utils.AuthUtils
 @Composable
 fun ProfileScreen(navController: NavController) {
     val context = LocalContext.current
-    var email by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
+    var email by remember { mutableStateOf("Loading...") }
+    var name by remember { mutableStateOf("Loading...") }
+    var isLoading by remember { mutableStateOf(true) }
+    var updateInProgress by remember { mutableStateOf(false) }
 
+    // Fetch user profile on screen load
     LaunchedEffect(Unit) {
-        isLoading = true
         AuthUtils.fetchUserProfile(
             onSuccess = { profileData ->
-                email = profileData?.get("email") as? String ?: ""
-                name = profileData?.get("name") as? String ?: ""
+                email = profileData?.get("email") as? String ?: "No email found"
+                name = profileData?.get("name") as? String ?: "No name found"
                 isLoading = false
             },
             onFailure = { error ->
@@ -43,43 +44,47 @@ fun ProfileScreen(navController: NavController) {
         Text(text = "Profile Screen", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, enabled = false)
-        Spacer(modifier = Modifier.height(8.dp))
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else {
+            TextField(value = email, onValueChange = {}, label = { Text("Email") }, enabled = false)
+            Spacer(modifier = Modifier.height(8.dp))
 
-        TextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
-        Spacer(modifier = Modifier.height(16.dp))
+            TextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = {
-                isLoading = true
-                AuthUtils.updateUserProfile(
-                    updatedData = mapOf("name" to name),
-                    onSuccess = {
-                        Toast.makeText(context, "Profile updated successfully!", Toast.LENGTH_SHORT).show()
-                        isLoading = false
-                    },
-                    onFailure = { error ->
-                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                        isLoading = false
-                    }
-                )
-            },
-            enabled = !isLoading
-        ) {
-            Text(text = "Update Profile")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = {
-            AuthUtils.logout {
-                Toast.makeText(context, "Logged out successfully!", Toast.LENGTH_SHORT).show()
-                navController.navigate("login") {
-                    popUpTo("home") { inclusive = true }
-                }
+            Button(
+                onClick = {
+                    updateInProgress = true
+                    AuthUtils.updateUserProfile(
+                        updatedData = mapOf("name" to name),
+                        onSuccess = {
+                            Toast.makeText(context, "Profile updated successfully!", Toast.LENGTH_SHORT).show()
+                            updateInProgress = false
+                        },
+                        onFailure = { error ->
+                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                            updateInProgress = false
+                        }
+                    )
+                },
+                enabled = !updateInProgress
+            ) {
+                Text(text = "Update Profile")
             }
-        }) {
-            Text(text = "Logout")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(onClick = {
+                AuthUtils.logout {
+                    Toast.makeText(context, "Logged out successfully!", Toast.LENGTH_SHORT).show()
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                }
+            }) {
+                Text(text = "Logout")
+            }
         }
     }
 }
