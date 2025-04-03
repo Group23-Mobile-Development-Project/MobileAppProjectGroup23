@@ -6,5 +6,6 @@ data class Event(
     val description: String = "",
     val date: String = "",
     val location: String = "",
-    val organizerId: String = ""
+    val organizerId: String = "",
+    val organizerName: String = "" // Add this field
 )

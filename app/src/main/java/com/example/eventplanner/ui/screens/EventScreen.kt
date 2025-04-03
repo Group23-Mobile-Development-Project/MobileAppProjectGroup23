@@ -22,9 +22,9 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
     var location by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
 
-    // Get logged-in user's UID (fallback to your user ID)
+    // Get logged-in user's UID
     val user = FirebaseAuth.getInstance().currentUser
-    val organizerId = user?.uid ?: "dvwFNFPwPVQWFuI0jXnFhcChbqr1"
+    val organizerId = user?.uid ?: "Unknown"
 
     // Collect events from Firestore
     val events by viewModel.events.collectAsState()
@@ -42,26 +42,23 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Show user ID at the top
             Text(text = "Logged in as: $organizerId", style = MaterialTheme.typography.bodyMedium)
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Show event list
             LazyColumn {
                 items(events) { event ->
                     EventItem(event)
                 }
             }
 
-            // Show Dialog for Adding Events
             if (showDialog) {
                 AlertDialog(
                     onDismissRequest = { showDialog = false },
                     confirmButton = {
                         Button(onClick = {
                             if (title.isNotEmpty() && description.isNotEmpty() && date.isNotEmpty() && location.isNotEmpty()) {
-                                viewModel.createEvent(title, description, date, location, organizerId)
+                                viewModel.createEvent(title, description, date, location)
                                 showDialog = false
                             }
                         }) {
@@ -103,7 +100,7 @@ fun EventItem(event: Event) {
             Text(text = "Description: ${event.description}")
             Text(text = "Date: ${event.date}")
             Text(text = "Location: ${event.location}")
-            Text(text = "Organizer ID: ${event.organizerId}", style = MaterialTheme.typography.bodySmall)
+            Text(text = "Organizer: ${event.organizerName}", style = MaterialTheme.typography.bodySmall) // ✅ Now showing name!
         }
     }
 }

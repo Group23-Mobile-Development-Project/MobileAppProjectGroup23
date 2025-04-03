@@ -5,16 +5,18 @@ import kotlinx.coroutines.tasks.await
 class FirestoreHelper {
     private val db = FirebaseFirestore.getInstance()
 
-    fun addEvent(event: Event): Boolean {
+    suspend fun addEvent(event: Event): Boolean {
         return try {
-            db.collection("events").add(event)
+            val newEventRef = db.collection("events").document()
+            val eventWithId = event.copy(id = newEventRef.id) // Assign Firestore ID
+            newEventRef.set(eventWithId).await()
             true
         } catch (e: Exception) {
             false
         }
     }
 
-    // ✅ Function to fetch events from Firestore
+    // ✅ Function to fetch events, including organizer names
     suspend fun getEvents(): List<Event> {
         return try {
             val snapshot = db.collection("events").get().await()
