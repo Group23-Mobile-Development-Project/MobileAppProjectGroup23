@@ -1,4 +1,4 @@
-package com.example.eventplanner.screens
+package com.example.eventplanner.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -21,6 +21,7 @@ fun SignupScreen(navController: NavController) {
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
@@ -53,6 +54,14 @@ fun SignupScreen(navController: NavController) {
                 }
             }
         )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") },
+            singleLine = true
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
@@ -61,6 +70,7 @@ fun SignupScreen(navController: NavController) {
                 AuthUtils.signUpUser(
                     email = email,
                     password = password,
+                    name = name,
                     onSuccess = {
                         isLoading = false
                         Toast.makeText(context, "Signup successful! Redirecting to login...", Toast.LENGTH_SHORT).show()

@@ -1,4 +1,4 @@
-package com.example.eventplanner.screens
+package com.example.eventplanner.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -14,7 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.eventplanner.utils.AuthUtils  // Ensure this import is correct
+import com.example.eventplanner.utils.AuthUtils
 
 @Composable
 fun LoginScreen(navController: NavController) {

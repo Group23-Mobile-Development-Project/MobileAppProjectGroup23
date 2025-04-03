@@ -7,15 +7,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
-import com.example.eventplanner.screens.LoginScreen
-import com.example.eventplanner.ui.screens.HomeScreen
-import com.example.eventplanner.screens.SignupScreen
+import com.example.eventplanner.ui.screens.*
 import com.example.eventplanner.ui.components.BottomNavBar
 import androidx.compose.material3.*
-import com.example.eventplanner.ui.screens.EventScreen
-import com.example.eventplanner.ui.screens.ProfileScreen
-import com.example.eventplanner.ui.screens.ParticipationScreen
-
 
 
 @Composable

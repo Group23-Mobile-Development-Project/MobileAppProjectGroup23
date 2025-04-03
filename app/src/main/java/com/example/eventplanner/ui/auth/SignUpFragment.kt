@@ -1,34 +1,19 @@
 package com.example.eventplanner.ui.auth
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.eventplanner.R
 import com.example.eventplanner.databinding.FragmentSignupBinding
-import com.example.eventplanner.utils.EmailAuthUtils
-import com.example.eventplanner.GoogleSignInUtils
+import com.example.eventplanner.utils.AuthUtils
 
-class SignupFragment : Fragment() {
+class SignUpFragment : Fragment() {
     private var _binding: FragmentSignupBinding? = null
     private val binding get() = _binding!!
-
-    private lateinit var googleSignInLauncher: ActivityResultLauncher<Intent>
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        googleSignInLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            // Handle Google Sign-In result if needed
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -41,32 +26,25 @@ class SignupFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.signUpButton.setOnClickListener {
-            val email = binding.emailEditText.text.toString().trim()
-            val password = binding.passwordEditText.text.toString().trim()
+        binding.signupButton.setOnClickListener {
+            val email = binding.emailEditText.text.toString()
+            val password = binding.passwordEditText.text.toString()
+            val name = binding.nameEditText.text.toString()
 
-            if (email.isNotEmpty() && password.length >= 6) {
-                EmailAuthUtils.registerUser(requireContext(), email, password)
-                findNavController().navigate(R.id.action_signupFragment_to_loginFragment)
+            if (email.isNotEmpty() && password.isNotEmpty() && name.isNotEmpty()) {
+                // Call AuthUtils.signUpUser with the correct parameters
+                AuthUtils.signUpUser(email, password, name,
+                    onSuccess = {
+                        Toast.makeText(requireContext(), "Signup successful", Toast.LENGTH_SHORT).show()
+                        findNavController().navigate(R.id.action_signupFragment_to_loginFragment)
+                    },
+                    onFailure = { errorMessage ->
+                        Toast.makeText(requireContext(), "Signup failed: $errorMessage", Toast.LENGTH_SHORT).show()
+                    }
+                )
             } else {
-                Toast.makeText(requireContext(), "Enter valid email and password (min 6 characters)", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Please enter all fields.", Toast.LENGTH_SHORT).show()
             }
-        }
-
-        binding.googleSignInButton.setOnClickListener {
-            GoogleSignInUtils.doGoogleSignIn(
-                requireContext(),
-                lifecycleScope,
-                googleSignInLauncher
-            ) {
-                requireActivity().runOnUiThread {
-                    Toast.makeText(requireContext(), "Google Sign-In successful!", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-
-        binding.loginText.setOnClickListener {
-            findNavController().navigate(R.id.action_signupFragment_to_loginFragment)
         }
     }
 
