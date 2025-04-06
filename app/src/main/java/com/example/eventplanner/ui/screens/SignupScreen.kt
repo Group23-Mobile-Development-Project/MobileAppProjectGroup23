@@ -1,12 +1,15 @@
 package com.example.eventplanner.ui.screens
 
+import android.app.Activity
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,16 +17,43 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.eventplanner.GoogleSignInUtils
 import com.example.eventplanner.utils.AuthUtils
 
 @Composable
 fun SignupScreen(navController: NavController) {
     val context = LocalContext.current
+    val activity = context as Activity
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    // Initialize Google Sign-In client when the screen is created
+    LaunchedEffect(Unit) {
+        GoogleSignInUtils.initGoogleSignInClient(context)
+    }
+
+    // Handle Google Sign-In intent result
+    val googleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val data = result.data
+        GoogleSignInUtils.handleSignInResult(
+            context = context,
+            data = data,
+            onSuccess = {
+                Toast.makeText(context, "Google Sign-In Success", Toast.LENGTH_SHORT).show()
+                navController.navigate("home") {
+                    popUpTo("signup") { inclusive = true }
+                }
+            },
+            onFailure = { error ->
+                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -32,6 +62,19 @@ fun SignupScreen(navController: NavController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Text(text = "Sign Up", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Name TextField
+        TextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") },
+            singleLine = true
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Email TextField
         TextField(
             value = email,
             onValueChange = { email = it },
@@ -40,13 +83,14 @@ fun SignupScreen(navController: NavController) {
         )
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Password TextField
         TextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
             singleLine = true,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password),
             trailingIcon = {
                 val icon = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -54,16 +98,9 @@ fun SignupScreen(navController: NavController) {
                 }
             }
         )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            singleLine = true
-        )
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Sign Up Button
         Button(
             onClick = {
                 isLoading = true
@@ -93,9 +130,20 @@ fun SignupScreen(navController: NavController) {
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Google Sign-In Button
+        Button(
+            onClick = {
+                GoogleSignInUtils.launchGoogleSignIn(googleLauncher)
+            }
+        ) {
+            Text("Sign in with Google")
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
         TextButton(onClick = { navController.navigate("login") }) {
-            Text(text = "Already have an account? Login")
+            Text("Already have an account? Login")
         }
     }
 }
