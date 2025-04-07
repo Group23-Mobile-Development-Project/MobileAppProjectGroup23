@@ -14,18 +14,20 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import com.example.eventplanner.data.model.Event
+import com.example.eventplanner.ui.components.AddEventDialog
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
+import com.example.eventplanner.ui.components.EventItem
 
 @Composable
 fun EventScreen(viewModel: EventViewModel = viewModel()) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
+    var selectedDate by remember { mutableStateOf("") } // Store selected date
     var showDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -39,8 +41,8 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
         DatePickerDialog(
             context,
             { _, selectedYear, selectedMonth, selectedDay ->
-                val selectedDate = LocalDate.of(selectedYear, selectedMonth + 1, selectedDay)
-                date = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                val selectedLocalDate = LocalDate.of(selectedYear, selectedMonth + 1, selectedDay)
+                selectedDate = selectedLocalDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             },
             year,
             month,
@@ -94,72 +96,20 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
 
             LazyColumn {
                 items(events) { event ->
-                    EventItem(event)
+                    EventItem(event) // Use the shared EventItem composable
                 }
             }
 
             if (showDialog) {
-                AlertDialog(
-                    onDismissRequest = { showDialog = false },
-                    confirmButton = {
-                        Button(onClick = {
-                            if (title.isNotEmpty() && description.isNotEmpty() && date.isNotEmpty() && location.isNotEmpty()) {
-                                viewModel.createEvent(title, description, date, location)
-                                showDialog = false
-                                title = ""
-                                description = ""
-                                date = ""
-                                location = ""
-                            }
-                        }) {
-                            Text("Add Event")
-                        }
-                    },
-                    dismissButton = {
-                        Button(onClick = { showDialog = false }) {
-                            Text("Cancel")
-                        }
-                    },
-                    title = { Text("Add Event") },
-                    text = {
-                        Column {
-                            TextField(value = title, onValueChange = { title = it }, label = { Text("Title") })
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TextField(value = description, onValueChange = { description = it }, label = { Text("Description") })
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { datePickerDialog.show() }) {
-                                Text(text = if (date.isEmpty()) "Select Date" else "Date: $date")
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TextField(value = location, onValueChange = { location = it }, label = { Text("Location") })
-                        }
+                AddEventDialog(
+                    selectedDate = selectedDate, // Pass selectedDate here
+                    onDismiss = { showDialog = false },
+                    onAdd = { title, description, date, location ->
+                        viewModel.createEvent(title, description, date, location)
+                        showDialog = false
                     }
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun EventItem(event: Event) {
-    val formattedDate = try {
-        LocalDate.parse(event.date, DateTimeFormatter.ISO_DATE)
-            .format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))
-    } catch (e: Exception) {
-        event.date // fallback
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Title: ${event.title}", style = MaterialTheme.typography.headlineSmall)
-            Text(text = "Description: ${event.description}")
-            Text(text = "Date: $formattedDate")
-            Text(text = "Location: ${event.location}")
-            Text(text = "Organizer: ${event.organizerName}", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

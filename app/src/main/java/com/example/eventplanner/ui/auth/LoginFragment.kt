@@ -39,7 +39,7 @@ fun AppNavGraph(navController: NavHostController, modifier: Modifier = Modifier)
                 SignupScreen(navController)
             }
             composable("home") {
-                HomeScreen(navController)
+                HomeScreen()
             }
             composable("events") {
                 EventScreen()
