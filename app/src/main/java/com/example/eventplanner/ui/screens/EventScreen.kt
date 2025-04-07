@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import com.example.eventplanner.data.model.Event
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -47,9 +48,26 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
         )
     }
 
-    // Get logged-in user's UID
+    // Firebase user
     val user = FirebaseAuth.getInstance().currentUser
-    val organizerId = user?.uid ?: "Unknown"
+    val uid = user?.uid
+    var displayName by remember { mutableStateOf("Loading...") }
+
+    // Fetch user's name from Firestore
+    LaunchedEffect(uid) {
+        uid?.let {
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(it)
+                .get()
+                .addOnSuccessListener { doc ->
+                    displayName = doc.getString("name") ?: "Unknown"
+                }
+                .addOnFailureListener {
+                    displayName = "Unknown"
+                }
+        }
+    }
 
     // Collect events from Firestore
     val events by viewModel.events.collectAsState()
@@ -67,7 +85,10 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            Text(text = "Logged in as: $organizerId", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = "Logged in as: $displayName",
+                style = MaterialTheme.typography.bodyMedium
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -85,7 +106,6 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
                             if (title.isNotEmpty() && description.isNotEmpty() && date.isNotEmpty() && location.isNotEmpty()) {
                                 viewModel.createEvent(title, description, date, location)
                                 showDialog = false
-                                // Reset fields
                                 title = ""
                                 description = ""
                                 date = ""
@@ -122,7 +142,6 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
 
 @Composable
 fun EventItem(event: Event) {
-    // Try parsing the date to beautify it
     val formattedDate = try {
         LocalDate.parse(event.date, DateTimeFormatter.ISO_DATE)
             .format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))
