@@ -100,7 +100,7 @@ fun EventItem(event: Event) {
             Text(text = "Description: ${event.description}")
             Text(text = "Date: ${event.date}")
             Text(text = "Location: ${event.location}")
-            Text(text = "Organizer: ${event.organizerName}", style = MaterialTheme.typography.bodySmall) // ✅ Now showing name!
+            Text(text = "Organizer: ${event.organizerName}", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
