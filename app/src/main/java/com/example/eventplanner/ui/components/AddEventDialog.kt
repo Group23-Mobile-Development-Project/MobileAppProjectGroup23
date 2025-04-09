@@ -1,5 +1,6 @@
 package com.example.eventplanner.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -8,9 +9,10 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun AddEventDialog(
-    selectedDate: String, // Pass selected date to dialog
+    selectedDate: String,
     onDismiss: () -> Unit,
-    onAdd: (String, String, String, String) -> Unit // Expect 4 parameters
+    onAdd: (String, String, String, String) -> Unit,
+    onDateClick: () -> Unit
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -21,7 +23,7 @@ fun AddEventDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    onAdd(title, description, selectedDate, location) // Pass selectedDate here
+                    onAdd(title, description, selectedDate, location)
                 }
             ) {
                 Text("Add")
@@ -37,7 +39,17 @@ fun AddEventDialog(
             Column {
                 OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") })
                 OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") })
-                Text("Date: $selectedDate") // Show the selected date
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Date: ${if (selectedDate.isNotEmpty()) selectedDate else "Select Event Date"}",
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .clickable { onDateClick() },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
                 OutlinedTextField(value = location, onValueChange = { location = it }, label = { Text("Location") })
             }
         },
