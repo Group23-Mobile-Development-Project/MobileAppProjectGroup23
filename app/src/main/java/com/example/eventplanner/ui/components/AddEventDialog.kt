@@ -1,6 +1,5 @@
 package com.example.eventplanner.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -37,20 +36,34 @@ fun AddEventDialog(
         title = { Text("Add Event") },
         text = {
             Column {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") })
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") })
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") }
+                )
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") }
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Date: ${if (selectedDate.isNotEmpty()) selectedDate else "Select Event Date"}",
-                    modifier = Modifier
-                        .padding(vertical = 8.dp)
-                        .clickable { onDateClick() },
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                OutlinedButton(
+                    onClick = onDateClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = if (selectedDate.isNotEmpty()) "Date: $selectedDate" else "Select Event Date")
+                }
 
-                OutlinedTextField(value = location, onValueChange = { location = it }, label = { Text("Location") })
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = location,
+                    onValueChange = { location = it },
+                    label = { Text("Location") }
+                )
             }
         },
         modifier = Modifier.padding(16.dp)
