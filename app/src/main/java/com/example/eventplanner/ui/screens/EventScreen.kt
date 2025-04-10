@@ -1,6 +1,6 @@
 package com.example.eventplanner.ui.screens
 
-import EventViewModel
+import com.example.eventplanner.viewmodel.EventViewModel
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,6 +31,7 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
     val uid = user?.uid
     var displayName by remember { mutableStateOf("Loading...") }
 
+    // Fetch display name from Firestore
     LaunchedEffect(uid) {
         uid?.let {
             FirebaseFirestore.getInstance()
@@ -46,6 +47,11 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
         }
     }
 
+    // Fetch user events on screen load
+    LaunchedEffect(Unit) {
+        viewModel.fetchUserEvents()
+    }
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = { showDialog = true }) {
@@ -53,12 +59,14 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
             }
         }
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
+            // User display name
             Text(
                 text = "Logged in as: $displayName",
                 style = MaterialTheme.typography.bodyMedium
@@ -66,12 +74,14 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // List of events
             LazyColumn {
                 items(events) { event ->
                     EventItem(event)
                 }
             }
 
+            // Add Event Dialog
             if (showDialog) {
                 val context = LocalContext.current
                 val calendar = Calendar.getInstance()

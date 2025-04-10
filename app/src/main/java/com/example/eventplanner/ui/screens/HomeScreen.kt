@@ -1,6 +1,6 @@
 package com.example.eventplanner.ui.screens
 
-import EventViewModel
+import com.example.eventplanner.viewmodel.EventViewModel
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +26,11 @@ fun HomeScreen(viewModel: EventViewModel = viewModel()) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf("") }
 
+    // Fetch all events on screen load
+    LaunchedEffect(Unit) {
+        viewModel.fetchAllEvents()
+    }
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = { showDialog = true }) {
@@ -33,6 +38,7 @@ fun HomeScreen(viewModel: EventViewModel = viewModel()) {
             }
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -61,6 +67,7 @@ fun HomeScreen(viewModel: EventViewModel = viewModel()) {
                 }
             }
 
+            // Add Event Dialog
             if (showDialog) {
                 val context = LocalContext.current
                 val calendar = Calendar.getInstance()
