@@ -11,7 +11,7 @@ class FirestoreHelper {
     suspend fun addEvent(event: Event): Boolean {
         return try {
             val newEventRef = db.collection("events").document()
-            val eventWithId = event.copy(id = newEventRef.id) // Assign Firestore ID
+            val eventWithId = event.copy(id = newEventRef.id)
             newEventRef.set(eventWithId).await()
             true
         } catch (e: Exception) {
