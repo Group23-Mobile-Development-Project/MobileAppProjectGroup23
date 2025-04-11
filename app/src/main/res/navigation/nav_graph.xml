@@ -15,11 +15,15 @@
         <action
             android:id="@+id/action_loginFragment_to_profileFragment"
             app:destination="@id/profileFragment" />
+        <!-- Updated action to navigate to HomeScreen -->
+        <action
+            android:id="@+id/action_loginFragment_to_homeScreen"
+            app:destination="@id/homeScreen" />
     </fragment>
 
     <fragment
         android:id="@+id/signupFragment"
-        android:name="com.example.eventplanner.ui.auth.SignupFragment"
+        android:name="com.example.eventplanner.ui.auth.SignUpFragment"
         android:label="Signup"
         tools:layout="@layout/fragment_signup">
         <action
@@ -38,5 +42,26 @@
             app:popUpTo="@id/profileFragment"
             app:popUpToInclusive="true" />
     </fragment>
+
+    <!-- Make sure to add your HomeScreen fragment here -->
+    <fragment
+        android:id="@+id/homeScreen"
+        android:name="com.example.eventplanner.ui.screens.HomeScreen"
+        android:label="HomeScreen"
+        tools:layout="@layout/fragment_home_screen">
+        <argument
+            android:name="eventViewModel"
+            app:argType="com.example.eventplanner.viewmodel.EventViewModel" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/eventDetailFragment"
+        android:name="com.example.eventplanner.ui.screens.EventDetailScreen"
+        android:label="Event Details">
+        <argument
+            android:name="eventId"
+            app:argType="string" />
+    </fragment>
+
 
 </navigation>

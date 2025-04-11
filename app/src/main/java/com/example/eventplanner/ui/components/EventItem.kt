@@ -1,5 +1,6 @@
 package com.example.eventplanner.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -10,26 +11,18 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun EventItem(event: Event) {
-    val formattedDate = try {
-        LocalDate.parse(event.date, DateTimeFormatter.ISO_DATE)
-            .format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))
-    } catch (e: Exception) {
-        event.date // fallback
-    }
-
+fun EventItem(event: Event, onClick: () -> Unit) {
     Card(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+            .padding(vertical = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Title: ${event.title}", style = MaterialTheme.typography.titleMedium)
-            Text(text = "Description: ${event.description}")
-            Text(text = "Date: $formattedDate")
-            Text(text = "Location: ${event.location}")
-            Text(text = "Organizer: ${event.organizerName}", style = MaterialTheme.typography.labelSmall)
+            Text(text = event.title, style = MaterialTheme.typography.titleMedium)
+            Text(text = event.date)
+            Text(text = event.location)
         }
     }
 }
+

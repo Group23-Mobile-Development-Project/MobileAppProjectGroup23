@@ -50,4 +50,19 @@ class FirestoreHelper {
     } catch (e: Exception) {
         null
     }
+
+    suspend fun getEventById(eventId: String): Event? {
+        val snapshot = FirebaseFirestore.getInstance()
+            .collection("events")
+            .document(eventId)
+            .get()
+            .await()
+
+        return if (snapshot.exists()) {
+            snapshot.toObject(Event::class.java)?.copy(id = snapshot.id)
+        } else {
+            null
+        }
+    }
+
 }

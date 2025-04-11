@@ -1,6 +1,5 @@
 package com.example.eventplanner.ui.screens
 
-import com.example.eventplanner.viewmodel.EventViewModel
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,8 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.eventplanner.ui.components.AddEventDialog
 import com.example.eventplanner.ui.components.EventItem
+import com.example.eventplanner.viewmodel.EventViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.time.LocalDate
@@ -22,8 +23,11 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Composable
-fun EventScreen(viewModel: EventViewModel = viewModel()) {
-    val events by viewModel.events.collectAsState()
+fun EventScreen(
+    navController: NavHostController,
+    eventViewModel: EventViewModel = viewModel()
+) {
+    val events by eventViewModel.events.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf("") }
 
@@ -31,7 +35,7 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
     val uid = user?.uid
     var displayName by remember { mutableStateOf("Loading...") }
 
-    // Fetch display name from Firestore
+    // Fetch display name
     LaunchedEffect(uid) {
         uid?.let {
             FirebaseFirestore.getInstance()
@@ -47,9 +51,9 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
         }
     }
 
-    // Fetch user events on screen load
+    // Fetch user events
     LaunchedEffect(Unit) {
-        viewModel.fetchUserEvents()
+        eventViewModel.fetchUserEvents()
     }
 
     Scaffold(
@@ -59,14 +63,12 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
             }
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // User display name
             Text(
                 text = "Logged in as: $displayName",
                 style = MaterialTheme.typography.bodyMedium
@@ -74,14 +76,17 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // List of events
             LazyColumn {
                 items(events) { event ->
-                    EventItem(event)
+                    EventItem(event = event) {
+                        event.id?.let {
+                            navController.navigate("eventDetail/${event.id}")
+                        }
+                    }
                 }
             }
 
-            // Add Event Dialog
+
             if (showDialog) {
                 val context = LocalContext.current
                 val calendar = Calendar.getInstance()
@@ -90,7 +95,7 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
                     selectedDate = selectedDate,
                     onDismiss = { showDialog = false },
                     onAdd = { title, description, date, location ->
-                        viewModel.createEvent(title, description, date, location)
+                        eventViewModel.createEvent(title, description, date, location)
                         showDialog = false
                         selectedDate = ""
                     },
@@ -113,3 +118,4 @@ fun EventScreen(viewModel: EventViewModel = viewModel()) {
         }
     }
 }
+
