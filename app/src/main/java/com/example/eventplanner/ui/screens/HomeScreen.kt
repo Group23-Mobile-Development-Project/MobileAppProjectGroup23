@@ -12,6 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.eventplanner.ui.components.AddEventDialog
@@ -44,11 +46,21 @@ fun HomeScreen(viewModel: EventViewModel = viewModel()) {
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            Text(
-                text = "Upcoming Events",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(16.dp)
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Text(
+                    text = "📅 Upcoming Events",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Divider(color = MaterialTheme.colorScheme.primary, thickness = 2.dp)
+            }
 
             if (events.isEmpty()) {
                 Box(
@@ -62,6 +74,7 @@ fun HomeScreen(viewModel: EventViewModel = viewModel()) {
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     items(events) { event ->
+                        // Modify the EventItem to include styles for text
                         EventItem(event)
                     }
                 }
