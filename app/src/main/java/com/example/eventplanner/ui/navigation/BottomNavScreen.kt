@@ -3,6 +3,9 @@ package com.example.eventplanner.ui.navigation
 import androidx.annotation.DrawableRes
 import com.example.eventplanner.R
 
+
+//this file has no application to my knowledge
+
 class BottomNavScreen {
     // Sealed class for Bottom Navigation Screens
     sealed class BottomNavScreen(val route: String, val title: String, @DrawableRes val icon: Int) {
