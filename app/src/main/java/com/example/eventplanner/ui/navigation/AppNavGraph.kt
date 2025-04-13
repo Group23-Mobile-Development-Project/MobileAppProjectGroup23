@@ -39,7 +39,7 @@ fun AppNavGraph(
             composable("home") {
                 HomeScreen(navController = navController)
             }
-            composable("event") {
+            composable("events") {
                 EventScreen(navController = navController)
             }
             composable("profile") {
