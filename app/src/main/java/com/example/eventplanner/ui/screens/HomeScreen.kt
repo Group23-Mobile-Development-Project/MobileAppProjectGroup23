@@ -19,9 +19,9 @@ fun HomeScreen(navController: NavHostController) {
     val isLoading by eventViewModel.isLoading.collectAsState()
     val error by eventViewModel.error.collectAsState()
 
-    // Fetch events when the screen is launched
+    // Fetch events for the logged-in user when the screen is launched
     LaunchedEffect(Unit) {
-        eventViewModel.fetchAllEvents()
+        eventViewModel.fetchAllEvents()  // Ensure you're calling the correct method here
     }
 
     Column(modifier = Modifier.padding(16.dp)) {

@@ -10,9 +10,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class EventViewModel : ViewModel() {
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
 
     private val firestoreHelper = FirestoreHelper()
-    private val auth = FirebaseAuth.getInstance()
 
     private val _events = MutableStateFlow<List<Event>>(emptyList())
     val events: StateFlow<List<Event>> = _events
@@ -26,11 +27,13 @@ class EventViewModel : ViewModel() {
     private val _selectedEvent = MutableStateFlow<Event?>(null)
     val selectedEvent: StateFlow<Event?> = _selectedEvent
 
-    fun fetchAllEvents() {
+    // Fetch all events for the logged-in user
+    fun fetchUserEvents() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val eventList = firestoreHelper.getAllEvents()
+                val userId = currentUser?.uid ?: return@launch
+                val eventList = firestoreHelper.getEventsByUser(userId)
                 _events.value = eventList
                 _error.value = null
             } catch (e: Exception) {
@@ -41,61 +44,75 @@ class EventViewModel : ViewModel() {
         }
     }
 
-    fun fetchUserEvents() {
+    // ✅ Fetch all events for everyone
+    fun fetchAllEvents() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val userId = auth.currentUser?.uid
-                _events.value = if (userId != null) {
-                    firestoreHelper.getEventsByUser(userId)
-                } else {
-                    emptyList()
-                }
+                val eventList = firestoreHelper.getAllEvents()
+                _events.value = eventList
                 _error.value = null
             } catch (e: Exception) {
-                _error.value = "Failed to fetch user events: ${e.message}"
+                _error.value = "Failed to fetch all events: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun fetchEventById(eventId: String) {
+    // Create a new event
+    fun createEvent(event: Event) {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
-                val event = firestoreHelper.getEventById(eventId)
-                _selectedEvent.value = event
+                val success = firestoreHelper.addEvent(event)
+                if (success) {
+                    _events.value = _events.value + event
+                    _error.value = null
+                } else {
+                    _error.value = "Failed to create event"
+                }
             } catch (e: Exception) {
-                _error.value = "Failed to fetch event: ${e.message}"
+                _error.value = "Error creating event: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    fun createEvent(title: String, description: String, date: String, location: String) {
-        val user = auth.currentUser ?: return
-        val organizerId = user.uid
-
+    // Fetch the event by ID
+    fun fetchEventById(eventId: String) {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
-                val userDoc = firestoreHelper.getUserDetails(organizerId)
-                val organizerName = userDoc?.getString("name") ?: "Unknown"
+                val event = firestoreHelper.getEventById(eventId)
+                _selectedEvent.value = event
+                _error.value = null
+            } catch (e: Exception) {
+                _error.value = "Failed to fetch event: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
 
-                val event = Event(
-                    id = "",
-                    title = title,
-                    description = description,
-                    date = date,
-                    location = location,
-                    organizerId = organizerId,
-                    organizerName = organizerName
-                )
-
-                val success = firestoreHelper.addEvent(event)
-                if (success) {
-                    fetchUserEvents()
+    // RSVP to the event (Attending or Not Attending)
+    fun updateRSVPStatus(eventId: String, status: String) {
+        val userId = currentUser?.uid ?: return
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val updated = firestoreHelper.updateRSVPStatus(eventId, userId, status)
+                if (updated) {
+                    fetchEventById(eventId)  // Refresh the event details after updating RSVP
+                    _error.value = null
+                } else {
+                    _error.value = "Failed to update RSVP status"
                 }
             } catch (e: Exception) {
-                _error.value = "Error creating event: ${e.message}"
+                _error.value = "Error updating RSVP status: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
