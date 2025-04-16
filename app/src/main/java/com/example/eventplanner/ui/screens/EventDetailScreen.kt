@@ -5,14 +5,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.eventplanner.viewmodel.EventViewModel
 import com.example.eventplanner.data.model.Event
-import com.example.eventplanner.R // Make sure you have an arrow_back icon in res
+import com.example.eventplanner.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,7 +37,7 @@ fun EventDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController?.navigateUp() }) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_arrow_back), // Replace with your own icon or use Icons.Default.ArrowBack if using Material Icons
+                            painter = painterResource(id = R.drawable.ic_arrow_back),
                             contentDescription = "Back"
                         )
                     }
@@ -62,7 +62,7 @@ fun EventDetailScreen(
                 }
 
                 event != null -> {
-                    EventDetailContent(event = event!!, navController = navController)
+                    EventDetailContent(event = event!!, navController = navController, viewModel = viewModel)
                 }
 
                 else -> {
@@ -74,12 +74,19 @@ fun EventDetailScreen(
 }
 
 @Composable
-fun EventDetailContent(event: Event, navController: NavHostController?) {
+fun EventDetailContent(
+    event: Event,
+    navController: NavHostController?,
+    viewModel: EventViewModel
+) {
+    val userId = viewModel.currentUser?.uid
+    val isUserAttending = event.attendees.any { it.userId == userId }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.SpaceBetween // Pushes buttons to the bottom
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(text = event.title, style = MaterialTheme.typography.headlineMedium)
@@ -87,6 +94,7 @@ fun EventDetailContent(event: Event, navController: NavHostController?) {
             Text(text = "Location: ${event.location}", fontSize = 16.sp)
             Text(text = "Organizer: ${event.organizerName}", fontSize = 16.sp)
             Text(text = "Description:\n${event.description}", fontSize = 16.sp)
+            Text(text = "Attendees: ${event.attendees.size}", fontSize = 16.sp)
         }
 
         Row(
@@ -96,8 +104,13 @@ fun EventDetailContent(event: Event, navController: NavHostController?) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
-                onClick = { /* TODO: Handle Attending */ },
-                modifier = Modifier.weight(1f)
+                onClick = {
+                    if (!isUserAttending) {
+                        viewModel.updateRSVPStatus(event.id, "attending")
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enabled = !isUserAttending
             ) {
                 Text("Attending")
             }
@@ -105,11 +118,16 @@ fun EventDetailContent(event: Event, navController: NavHostController?) {
             Spacer(modifier = Modifier.width(16.dp))
 
             Button(
-                onClick = { /* TODO: Handle Not Attending */ },
+                onClick = {
+                    if (isUserAttending) {
+                        viewModel.updateRSVPStatus(event.id, "not attending")
+                    }
+                },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error
-                )
+                ),
+                enabled = isUserAttending
             ) {
                 Text("Not Attending")
             }

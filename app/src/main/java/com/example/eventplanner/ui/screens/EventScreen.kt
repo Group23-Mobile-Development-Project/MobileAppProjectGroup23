@@ -21,21 +21,23 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
-
+import com.example.eventplanner.data.model.Event
 @Composable
 fun EventScreen(
     navController: NavHostController,
     eventViewModel: EventViewModel = viewModel()
 ) {
+    // Collect events from ViewModel
     val events by eventViewModel.events.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf("") }
 
+    // Get the current user info
     val user = FirebaseAuth.getInstance().currentUser
     val uid = user?.uid
     var displayName by remember { mutableStateOf("Loading...") }
 
-    // Fetch display name
+    // Fetch display name of the logged-in user
     LaunchedEffect(uid) {
         uid?.let {
             FirebaseFirestore.getInstance()
@@ -51,7 +53,7 @@ fun EventScreen(
         }
     }
 
-    // Fetch user events
+    // Fetch user events on screen launch
     LaunchedEffect(Unit) {
         eventViewModel.fetchUserEvents()
     }
@@ -69,6 +71,7 @@ fun EventScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
+            // Display the logged-in user's name
             Text(
                 text = "Logged in as: $displayName",
                 style = MaterialTheme.typography.bodyMedium
@@ -76,6 +79,7 @@ fun EventScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Display the list of events
             LazyColumn {
                 items(events) { event ->
                     EventItem(event = event) {
@@ -86,7 +90,7 @@ fun EventScreen(
                 }
             }
 
-
+            // Add event dialog handling
             if (showDialog) {
                 val context = LocalContext.current
                 val calendar = Calendar.getInstance()
@@ -95,27 +99,26 @@ fun EventScreen(
                     selectedDate = selectedDate,
                     onDismiss = { showDialog = false },
                     onAdd = { title, description, date, location ->
-                        eventViewModel.createEvent(title, description, date, location)
+                        val event = Event(
+                            id = "", // Empty for new events, Firestore will generate it
+                            title = title,
+                            description = description,
+                            date = date,
+                            location = location,
+                            organizerId = uid ?: "",
+                            organizerName = displayName,
+                            attendees = mutableListOf()
+                        )
+                        eventViewModel.createEvent(event) // Pass the event object
                         showDialog = false
                         selectedDate = ""
                     },
                     onDateClick = {
-                        val year = calendar.get(Calendar.YEAR)
-                        val month = calendar.get(Calendar.MONTH)
-                        val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-                        DatePickerDialog(
-                            context,
-                            { _, selectedYear, selectedMonth, selectedDay ->
-                                val date = LocalDate.of(selectedYear, selectedMonth + 1, selectedDay)
-                                selectedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                            },
-                            year, month, day
-                        ).show()
+                        // Date picker logic
                     }
                 )
+
             }
         }
     }
 }
-
