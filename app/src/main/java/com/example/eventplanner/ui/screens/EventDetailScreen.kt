@@ -80,7 +80,9 @@ fun EventDetailContent(
     viewModel: EventViewModel
 ) {
     val userId = viewModel.currentUser?.uid
-    val isUserAttending = event.attendees.any { it.userId == userId }
+    val isUserAttending = event.attendees.any { it.userId == userId && it.status == "attending" }
+
+    val attendingCount = event.attendees.count { it.status == "attending" }
 
     Column(
         modifier = Modifier
@@ -94,7 +96,7 @@ fun EventDetailContent(
             Text(text = "Location: ${event.location}", fontSize = 16.sp)
             Text(text = "Organizer: ${event.organizerName}", fontSize = 16.sp)
             Text(text = "Description:\n${event.description}", fontSize = 16.sp)
-            Text(text = "Attendees: ${event.attendees.size}", fontSize = 16.sp)
+            Text(text = "Attendees: $attendingCount", fontSize = 16.sp)
         }
 
         Row(
