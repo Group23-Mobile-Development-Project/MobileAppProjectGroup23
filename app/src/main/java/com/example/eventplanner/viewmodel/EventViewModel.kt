@@ -9,6 +9,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.firestore.FirebaseFirestore
+// At the top of the file
+
+import android.util.Log
+
+
+
+
 class EventViewModel : ViewModel() {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
@@ -104,7 +114,30 @@ class EventViewModel : ViewModel() {
             try {
                 val updated = firestoreHelper.updateRSVPStatus(eventId, userId, status)
                 if (updated) {
-                    fetchEventById(eventId)  // Refresh the event details after updating RSVP
+                    fetchEventById(eventId) // Refresh event data
+
+                    // ✅ Subscribe or Unsubscribe to topic
+                    val topic = "event_$eventId"
+                    if (status == "Attending") {
+                        FirebaseMessaging.getInstance().subscribeToTopic(topic)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    Log.d("FCM", "Subscribed to topic: $topic")
+                                } else {
+                                    Log.e("FCM", "Subscription failed", task.exception)
+                                }
+                            }
+                    } else {
+                        FirebaseMessaging.getInstance().unsubscribeFromTopic(topic)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    Log.d("FCM", "Unsubscribed from topic: $topic")
+                                } else {
+                                    Log.e("FCM", "Unsubscription failed", task.exception)
+                                }
+                            }
+                    }
+
                     _error.value = null
                 } else {
                     _error.value = "Failed to update RSVP status"
@@ -116,4 +149,19 @@ class EventViewModel : ViewModel() {
             }
         }
     }
+
+
+
+
+    fun saveUserFcmToken(userId: String) {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                FirebaseFirestore.getInstance().collection("users")
+                    .document(userId)
+                    .update("fcmToken", token)
+            }
+        }
+    }
+
 }
