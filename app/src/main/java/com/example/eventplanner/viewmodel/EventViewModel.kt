@@ -151,8 +151,6 @@ class EventViewModel : ViewModel() {
     }
 
 
-
-
     fun saveUserFcmToken(userId: String) {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
@@ -164,4 +162,26 @@ class EventViewModel : ViewModel() {
         }
     }
 
+
+    // Delete an event by ID
+    fun deleteEvent(eventId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val success = firestoreHelper.deleteEvent(eventId)
+                if (success) {
+                    _events.value = _events.value.filterNot { it.id == eventId }
+                    _error.value = null
+                } else {
+                    _error.value = "Failed to delete event"
+                }
+            } catch (e: Exception) {
+                _error.value = "Error deleting event: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
 }
+

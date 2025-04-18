@@ -7,11 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.eventplanner.data.model.Event
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Composable
-fun EventItem(event: Event, onClick: () -> Unit) {
+fun EventItem(
+    event: Event,
+    onClick: () -> Unit,
+    canDelete: Boolean = false,
+    onDelete: (() -> Unit)? = null
+) {
     Card(
         onClick = onClick,
         modifier = Modifier
@@ -22,7 +25,16 @@ fun EventItem(event: Event, onClick: () -> Unit) {
             Text(text = event.title, style = MaterialTheme.typography.titleMedium)
             Text(text = event.date)
             Text(text = event.location)
+
+            if (canDelete && onDelete != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onDelete,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            }
         }
     }
 }
-

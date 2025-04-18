@@ -7,10 +7,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.eventplanner.ui.components.EventItem
 import com.example.eventplanner.viewmodel.EventViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -19,30 +20,56 @@ fun HomeScreen(navController: NavHostController) {
     val isLoading by eventViewModel.isLoading.collectAsState()
     val error by eventViewModel.error.collectAsState()
 
-    // Fetch events for the logged-in user when the screen is launched
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+    // Fetch all events when the screen is launched
     LaunchedEffect(Unit) {
-        eventViewModel.fetchAllEvents()  // Ensure you're calling the correct method here
+        eventViewModel.fetchAllEvents()
     }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Events", style = MaterialTheme.typography.titleLarge)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "All Events",
+            style = MaterialTheme.typography.titleLarge
+        )
 
-        if (isLoading) {
-            CircularProgressIndicator()
-        } else if (events.isNotEmpty()) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(events) { event ->
-                    EventItem(event = event) {
-                        navController.navigate("eventDetail/${event.id}")
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when {
+            isLoading -> {
+                CircularProgressIndicator()
+            }
+
+            events.isNotEmpty() -> {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(events) { event ->
+                        val isOrganizer = event.organizerId == currentUserId
+                        EventItem(
+                            event = event,
+                            onClick = {
+                                navController.navigate("eventDetail/${event.id}")
+                            },
+                            canDelete = isOrganizer,
+                            onDelete = {
+                                event.id?.let { eventViewModel.deleteEvent(it) }
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
-        } else {
-            Text("No events available.", style = MaterialTheme.typography.bodyMedium)
+
+            else -> {
+                Text("No events available.")
+            }
         }
 
-        // Display error message if there's any
         error?.let {
+            Spacer(modifier = Modifier.height(8.dp))
             Text(text = it, color = MaterialTheme.colorScheme.error)
         }
     }

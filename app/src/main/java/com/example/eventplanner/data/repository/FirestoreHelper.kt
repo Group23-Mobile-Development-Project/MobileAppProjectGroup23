@@ -122,4 +122,18 @@ class FirestoreHelper {
             false
         }
     }
+
+    suspend fun deleteEvent(eventId: String): Boolean {
+        return try {
+            FirebaseFirestore.getInstance()
+                .collection("events")
+                .document(eventId)
+                .delete()
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
 }

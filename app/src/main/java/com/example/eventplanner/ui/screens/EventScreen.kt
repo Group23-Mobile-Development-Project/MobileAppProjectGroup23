@@ -82,13 +82,24 @@ fun EventScreen(
             // Display the list of events
             LazyColumn {
                 items(events) { event ->
-                    EventItem(event = event) {
-                        event.id?.let {
-                            navController.navigate("eventDetail/${event.id}")
+                    val isOrganizer = event.organizerId == uid
+                    EventItem(
+                        event = event,
+                        onClick = {
+                            event.id?.let {
+                                navController.navigate("eventDetail/$it")
+                            }
+                        },
+                        canDelete = isOrganizer,
+                        onDelete = {
+                            event.id?.let { eventId ->
+                                eventViewModel.deleteEvent(eventId)
+                            }
                         }
-                    }
+                    )
                 }
             }
+
 
             // Add event dialog handling
             if (showDialog) {
