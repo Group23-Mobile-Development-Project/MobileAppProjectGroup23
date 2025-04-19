@@ -18,26 +18,29 @@ import com.example.eventplanner.ui.components.EventItem
 import com.example.eventplanner.viewmodel.EventViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.*
 import com.example.eventplanner.data.model.Event
+import java.text.SimpleDateFormat
+import java.util.*
+
 @Composable
 fun EventScreen(
     navController: NavHostController,
     eventViewModel: EventViewModel = viewModel()
 ) {
-    // Collect events from ViewModel
     val events by eventViewModel.events.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf("") }
 
-    // Get the current user info
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
+    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+
+    // Firebase user
     val user = FirebaseAuth.getInstance().currentUser
     val uid = user?.uid
     var displayName by remember { mutableStateOf("Loading...") }
 
-    // Fetch display name of the logged-in user
+    // Fetch display name
     LaunchedEffect(uid) {
         uid?.let {
             FirebaseFirestore.getInstance()
@@ -53,9 +56,23 @@ fun EventScreen(
         }
     }
 
-    // Fetch user events on screen launch
+    // Fetch user events
     LaunchedEffect(Unit) {
         eventViewModel.fetchUserEvents()
+    }
+
+    // DatePickerDialog
+    val datePickerDialog = remember {
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                calendar.set(year, month, dayOfMonth)
+                selectedDate = dateFormatter.format(calendar.time)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
     }
 
     Scaffold(
@@ -71,7 +88,6 @@ fun EventScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Display the logged-in user's name
             Text(
                 text = "Logged in as: $displayName",
                 style = MaterialTheme.typography.bodyMedium
@@ -79,7 +95,6 @@ fun EventScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Display the list of events
             LazyColumn {
                 items(events) { event ->
                     val isOrganizer = event.organizerId == uid
@@ -100,18 +115,17 @@ fun EventScreen(
                 }
             }
 
-
-            // Add event dialog handling
+            // Dialog with working calendar
             if (showDialog) {
-                val context = LocalContext.current
-                val calendar = Calendar.getInstance()
-
                 AddEventDialog(
                     selectedDate = selectedDate,
-                    onDismiss = { showDialog = false },
+                    onDismiss = {
+                        showDialog = false
+                        selectedDate = ""
+                    },
                     onAdd = { title, description, date, location ->
                         val event = Event(
-                            id = "", // Empty for new events, Firestore will generate it
+                            id = "",
                             title = title,
                             description = description,
                             date = date,
@@ -120,15 +134,14 @@ fun EventScreen(
                             organizerName = displayName,
                             attendees = mutableListOf()
                         )
-                        eventViewModel.createEvent(event) // Pass the event object
+                        eventViewModel.createEvent(event)
                         showDialog = false
                         selectedDate = ""
                     },
                     onDateClick = {
-                        // Date picker logic
+                        datePickerDialog.show()
                     }
                 )
-
             }
         }
     }
