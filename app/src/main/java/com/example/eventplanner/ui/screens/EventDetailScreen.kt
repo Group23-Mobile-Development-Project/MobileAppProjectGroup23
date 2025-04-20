@@ -1,5 +1,9 @@
 package com.example.eventplanner.ui.screens
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -10,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.compose.ui.platform.LocalContext  // <-- Add this import
 import com.example.eventplanner.viewmodel.EventViewModel
 import com.example.eventplanner.data.model.Event
 import com.example.eventplanner.R
@@ -81,8 +86,9 @@ fun EventDetailContent(
 ) {
     val userId = viewModel.currentUser?.uid
     val isUserAttending = event.attendees.any { it.userId == userId && it.status == "attending" }
-
     val attendingCount = event.attendees.count { it.status == "attending" }
+
+    val context = LocalContext.current  // Use LocalContext.current to get the context
 
     Column(
         modifier = Modifier
@@ -134,5 +140,37 @@ fun EventDetailContent(
                 Text("Not Attending")
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Button to view location on the map
+        Button(
+            onClick = {
+                // Ensure the event has a location set
+                if (event.location.isNotEmpty()) {
+                    openMap(event.location, context)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("View on Map")
+        }
+    }
+}
+
+private fun openMap(location: String, context: Context) {
+    val locationQuery = Uri.encode(location)
+    val gmmIntentUri = Uri.parse("geo:0,0?q=$locationQuery")
+    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+    mapIntent.setPackage("com.google.android.apps.maps")
+
+    Log.d("MapLocation", "Location passed: $location")  // Log for debugging
+
+    if (mapIntent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(mapIntent)
+    } else {
+        // Fallback if Google Maps is not found
+        val fallbackIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+        context.startActivity(fallbackIntent)
     }
 }
