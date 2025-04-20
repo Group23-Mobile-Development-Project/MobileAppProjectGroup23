@@ -106,9 +106,15 @@ fun EventScreen(
                             }
                         },
                         canDelete = isOrganizer,
+                        canEdit = isOrganizer,  // Allow editing if the user is the organizer
                         onDelete = {
                             event.id?.let { eventId ->
                                 eventViewModel.deleteEvent(eventId)
+                            }
+                        },
+                        onEdit = {
+                            event.id?.let {
+                                navController.navigate("editEvent/$it") // Navigate to Edit Event screen
                             }
                         }
                     )

@@ -8,8 +8,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.eventplanner.ui.components.BottomNavBar
 import com.example.eventplanner.ui.screens.*
+import com.example.eventplanner.viewmodel.EventViewModel
 
 @Composable
 fun AppNavGraph(
@@ -53,6 +55,15 @@ fun AppNavGraph(
                 EventDetailScreen(
                     eventId = eventId,
                     navController = navController
+                )
+            }
+            composable("editEvent/{eventId}") { backStackEntry ->
+                val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
+                val viewModel: EventViewModel = viewModel() // Get EventViewModel here
+                EditEventScreen(
+                    eventId = eventId,
+                    navController = navController,
+                    viewModel = viewModel
                 )
             }
         }

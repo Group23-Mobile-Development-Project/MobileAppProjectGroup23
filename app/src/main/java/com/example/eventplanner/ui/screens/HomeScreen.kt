@@ -56,6 +56,12 @@ fun HomeScreen(navController: NavHostController) {
                             canDelete = isOrganizer,
                             onDelete = {
                                 event.id?.let { eventViewModel.deleteEvent(it) }
+                            },
+                            canEdit = isOrganizer,  // Enable edit only for organizers
+                            onEdit = {
+                                event.id?.let { eventId ->
+                                    navController.navigate("editEvent/$eventId")  // Correctly navigate to the editEvent route
+                                }
                             }
                         )
                         Spacer(modifier = Modifier.height(8.dp))

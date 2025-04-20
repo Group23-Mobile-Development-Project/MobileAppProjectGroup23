@@ -136,4 +136,18 @@ class FirestoreHelper {
         }
     }
 
+    suspend fun updateEventDetails(eventId: String, updatedFields: Map<String, Any>): Boolean {
+        return try {
+            FirebaseFirestore.getInstance()
+                .collection("events")
+                .document(eventId)
+                .update(updatedFields)
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+
 }

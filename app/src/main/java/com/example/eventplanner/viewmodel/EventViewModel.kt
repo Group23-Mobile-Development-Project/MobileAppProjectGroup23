@@ -21,6 +21,7 @@ import android.util.Log
 
 class EventViewModel : ViewModel() {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+
     val currentUser = auth.currentUser
 
     private val firestoreHelper = FirestoreHelper()
@@ -182,6 +183,28 @@ class EventViewModel : ViewModel() {
             }
         }
     }
+
+
+    fun updateEventDetails(eventId: String, updatedFields: Map<String, Any>) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val success = firestoreHelper.updateEventDetails(eventId, updatedFields)
+                if (success) {
+                    _error.value = null
+                    fetchEventById(eventId) // Refresh the selected event
+                } else {
+                    _error.value = "Failed to update event"
+                }
+            } catch (e: Exception) {
+                _error.value = "Error updating event: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+
 
 }
 

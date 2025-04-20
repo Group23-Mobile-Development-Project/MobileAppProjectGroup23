@@ -13,7 +13,9 @@ fun EventItem(
     event: Event,
     onClick: () -> Unit,
     canDelete: Boolean = false,
-    onDelete: (() -> Unit)? = null
+    canEdit: Boolean = false,  // Add canEdit parameter
+    onDelete: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null  // Add onEdit parameter
 ) {
     Card(
         onClick = onClick,
@@ -26,6 +28,7 @@ fun EventItem(
             Text(text = event.date)
             Text(text = event.location)
 
+            // Conditionally display the Delete button
             if (canDelete && onDelete != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
@@ -33,6 +36,17 @@ fun EventItem(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
                     Text("Delete")
+                }
+            }
+
+            // Conditionally display the Edit button
+            if (canEdit && onEdit != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onEdit,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Edit")
                 }
             }
         }
