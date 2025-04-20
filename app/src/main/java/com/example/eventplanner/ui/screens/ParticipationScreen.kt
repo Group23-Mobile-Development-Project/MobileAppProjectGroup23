@@ -1,5 +1,6 @@
 package com.example.eventplanner.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,16 +10,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.eventplanner.viewmodel.EventViewModel
 import com.example.eventplanner.data.model.Event
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ParticipationScreen(viewModel: EventViewModel = viewModel()) {
+fun ParticipationScreen(
+    navController: NavController,
+    viewModel: EventViewModel = viewModel()
+) {
     val userId = viewModel.currentUser?.uid
 
     LaunchedEffect(userId) {
-        viewModel.fetchAllEvents() // Load all events
+        viewModel.fetchAllEvents()
     }
 
     val events by viewModel.events.collectAsState()
@@ -60,7 +65,7 @@ fun ParticipationScreen(viewModel: EventViewModel = viewModel()) {
                 else -> {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(attendingEvents) { event ->
-                            ParticipationEventCard(event = event)
+                            ParticipationEventCard(event = event, navController = navController)
                         }
                     }
                 }
@@ -70,9 +75,13 @@ fun ParticipationScreen(viewModel: EventViewModel = viewModel()) {
 }
 
 @Composable
-fun ParticipationEventCard(event: Event) {
+fun ParticipationEventCard(event: Event, navController: NavController) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                navController.navigate("eventDetail/${event.id}")
+            },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

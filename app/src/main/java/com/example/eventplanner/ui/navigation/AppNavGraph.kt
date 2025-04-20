@@ -48,7 +48,7 @@ fun AppNavGraph(
                 ProfileScreen(navController = navController)
             }
             composable("participation") {
-                ParticipationScreen()
+                ParticipationScreen(navController = navController)
             }
             composable("eventDetail/{eventId}") { backStackEntry ->
                 val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
