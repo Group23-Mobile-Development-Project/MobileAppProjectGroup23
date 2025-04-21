@@ -102,7 +102,17 @@ fun EventDetailContent(
             Text(text = "Location: ${event.location}", fontSize = 16.sp)
             Text(text = "Organizer: ${event.organizerName}", fontSize = 16.sp)
             Text(text = "Description:\n${event.description}", fontSize = 16.sp)
-            Text(text = "Attendees: $attendingCount", fontSize = 16.sp)
+            Text(text = "Attendees: $attendingCount", fontSize = 15.sp)
+
+            val attendingUsers = event.attendees.filter { it.status == "attending" }
+
+            if (attendingUsers.isNotEmpty()) {
+                Text("Attending Users:", fontSize = 16.sp)
+                attendingUsers.forEach { attendee ->
+                    Text("- ${attendee.userName}", fontSize = 14.sp)
+                }
+            }
+
         }
 
         Row(
