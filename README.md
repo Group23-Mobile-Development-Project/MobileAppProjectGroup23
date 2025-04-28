@@ -1,8 +1,8 @@
-Event Planner App
+##Event Planner App##
 Welcome to the Event Planner App — a mobile application designed to make event management easy and intuitive.
 This project was built as part of a learning journey in mobile app development, combining multiple real-world technologies and best practices.
 
-Features Implemented
+##Features Implemented##
 Add Events
 Users can create new events by entering a title, description, date/time, and selecting a location.
 
@@ -12,7 +12,7 @@ Existing events can be updated easily if any details change.
 View Events on Map
 All created events are visualized on a Google Map with location pins, making it simple to explore upcoming activities geographically.
 
-Authentication (Optional)
+Authentication
 Email/password-based login and signup functionality to securely manage user sessions.
 
 Firestore Integration
@@ -24,7 +24,7 @@ Seamless Google Maps SDK integration for a dynamic, location-based experience.
 
 
 
-🛠️ Technologies Used
+##Technologies Used##
 Kotlin — Building the mobile app natively for Android.
 
 Firebase Firestore — Cloud database solution for storing event details.
@@ -33,10 +33,10 @@ Firebase Authentication — Secure login and user management (if applicable).
 
 Google Maps SDK — Integrating maps and location pins.
 
-Jetpack Compose — (If applicable) Modern, declarative UI toolkit for Android apps.
+Jetpack Compose — Modern, declarative UI toolkit for Android apps.
 
 
-Project Structure (at a glance)
+Project Structure
 screens/ — All main screens like AddEvent, EditEvent, EventList, and MapView.
 
 models/ — Data classes like Event.kt representing event information.
