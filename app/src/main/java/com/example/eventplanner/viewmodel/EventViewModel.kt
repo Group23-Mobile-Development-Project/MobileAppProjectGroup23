@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.firestore.FirebaseFirestore
-// At the top of the file
+
 
 import android.util.Log
 
@@ -55,7 +55,7 @@ class EventViewModel : ViewModel() {
         }
     }
 
-    // ✅ Fetch all events for everyone
+    // Fetch all events for everyone in homescreen
     fun fetchAllEvents() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -117,7 +117,7 @@ class EventViewModel : ViewModel() {
                 if (updated) {
                     fetchEventById(eventId) // Refresh event data
 
-                    // ✅ Subscribe or Unsubscribe to topic
+                    //Subscribe or Unsubscribe to topic for notification
                     val topic = "event_$eventId"
                     if (status == "Attending") {
                         FirebaseMessaging.getInstance().subscribeToTopic(topic)
