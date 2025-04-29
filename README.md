@@ -29,7 +29,7 @@ Kotlin — Building the mobile app natively for Android.
 
 Firebase Firestore — Cloud database solution for storing event details.
 
-Firebase Authentication — Secure login and user management (if applicable).
+Firebase Authentication — Secure login and user management.
 
 Google Maps SDK — Integrating maps and location pins.
 
