@@ -8,5 +8,10 @@ data class Event(
     val location: String = "",
     val organizerId: String = "",
     val organizerName: String = "",
-    val attendees: List<Attendee> = listOf() // List of attendees
+    val attendees: List<Attendee> = listOf(),
+
+
+    val ticketingEnabled: Boolean = false,
+    val ticketType: String = TicketType.FREE.value,
+    val priceCents: Long = 0L
 )
