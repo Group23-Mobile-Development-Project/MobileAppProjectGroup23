@@ -129,7 +129,7 @@ fun EventScreen(
                         showDialog = false
                         selectedDate = ""
                     },
-                    onAdd = { title, description, date, location ->
+                    onAdd = { title, description, date, location, ticketingEnabled, ticketType, priceCents ->
                         val event = Event(
                             id = "",
                             title = title,
@@ -138,7 +138,10 @@ fun EventScreen(
                             location = location,
                             organizerId = uid ?: "",
                             organizerName = displayName,
-                            attendees = mutableListOf()
+                            attendees = mutableListOf(),
+                            ticketingEnabled = ticketingEnabled,
+                            ticketType = ticketType,
+                            priceCents = priceCents
                         )
                         eventViewModel.createEvent(event)
                         showDialog = false
