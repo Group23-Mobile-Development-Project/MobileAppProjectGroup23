@@ -50,7 +50,7 @@ dependencies {
     // Jetpack Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)  // ✅ Fixed graphics reference
+    implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation (libs.androidx.material3.vversion)
@@ -90,5 +90,8 @@ dependencies {
 
     // Firebase BOM is already declared, so just add:
     implementation(libs.firebase.messaging.ktx)
+
+    implementation("com.google.zxing:core:3.5.3")
+
 
 }

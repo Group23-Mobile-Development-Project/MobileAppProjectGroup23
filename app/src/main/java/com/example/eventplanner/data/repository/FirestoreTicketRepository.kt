@@ -1,12 +1,12 @@
 package com.example.eventplanner.data.repository
 
+import com.example.eventplanner.data.model.PaymentStatus
+import com.example.eventplanner.data.model.Ticket
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.toObject
-import com.example.eventplanner.data.model.PaymentStatus
-import com.example.eventplanner.data.model.Ticket
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -24,7 +24,7 @@ class FirestoreTicketRepository(
         userName: String?,
         paymentRequired: Boolean
     ): CreateOrGetTicketResult {
-        // One ticket per user per event
+        // one ticket per user per event
         val existing = ticketsCol
             .whereEqualTo("eventId", eventId)
             .whereEqualTo("userId", userId)
@@ -35,7 +35,7 @@ class FirestoreTicketRepository(
         if (!existing.isEmpty) {
             val doc = existing.documents.first()
             val t = doc.toObject<Ticket>()?.copy(id = doc.id)
-            requireNotNull(t) { "Failed to parse existing ticket" }
+            requireNotNull(t) { "failed to parse existing ticket" }
             return CreateOrGetTicketResult(ticket = t, rawTokenForQr = null)
         }
 
@@ -62,6 +62,7 @@ class FirestoreTicketRepository(
             paymentStatus = initialStatus,
             paymentIntentId = null,
             qrTokenHash = tokenHash,
+            qrToken = rawToken,
             checkedInAt = null,
             checkedInBy = null,
             updatedAt = now
@@ -77,7 +78,6 @@ class FirestoreTicketRepository(
             "updatedAt" to FieldValue.serverTimestamp()
         )
         if (paymentIntentId != null) updates["paymentIntentId"] = paymentIntentId
-
         ticketsCol.document(ticketId).update(updates).await()
     }
 
@@ -89,6 +89,34 @@ class FirestoreTicketRepository(
                 "updatedAt" to FieldValue.serverTimestamp()
             )
         ).await()
+    }
+
+    override suspend fun rotateQrToken(ticketId: String): String {
+        val rawToken = TicketTokenUtil.generateTokenUrlSafe()
+        val tokenHash = TicketTokenUtil.sha256Hex(rawToken)
+
+        ticketsCol.document(ticketId).update(
+            mapOf(
+                "qrToken" to rawToken,
+                "qrTokenHash" to tokenHash,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+        ).await()
+
+        return rawToken
+    }
+
+    override suspend fun getMyTicketForEvent(eventId: String, userId: String): Ticket? {
+        val snap = ticketsCol
+            .whereEqualTo("eventId", eventId)
+            .whereEqualTo("userId", userId)
+            .limit(1)
+            .get()
+            .await()
+
+        if (snap.isEmpty) return null
+        val doc = snap.documents.first()
+        return doc.toObject<Ticket>()?.copy(id = doc.id)
     }
 
     override fun observeMyTicketForEvent(eventId: String, userId: String): Flow<Ticket?> = callbackFlow {

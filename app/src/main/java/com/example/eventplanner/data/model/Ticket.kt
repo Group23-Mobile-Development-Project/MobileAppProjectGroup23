@@ -1,4 +1,5 @@
 package com.example.eventplanner.data.model
+
 import com.google.firebase.Timestamp
 
 data class Ticket(
@@ -11,6 +12,8 @@ data class Ticket(
     val paymentStatus: String = PaymentStatus.NONE.value,
     val paymentIntentId: String? = null,
     val qrTokenHash: String = "",
+    // raw token used only for generating QR payload; it is not personal data
+    val qrToken: String? = null,
     val checkedInAt: Timestamp? = null,
     val checkedInBy: String? = null,
     val updatedAt: Timestamp? = null

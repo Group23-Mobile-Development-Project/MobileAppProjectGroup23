@@ -1,6 +1,5 @@
 package com.example.eventplanner.data.repository
 
-import com.example.eventplanner.data.model.PaymentStatus
 import com.example.eventplanner.data.model.Ticket
 import kotlinx.coroutines.flow.Flow
 
@@ -22,6 +21,13 @@ interface TicketRepository {
         ticketId: String,
         organizerUid: String
     )
+
+    // rotates QR token (raw token + hash) for an existing ticket
+    // returns the new raw token so the UI can render a new QR code immediately
+    suspend fun rotateQrToken(ticketId: String): String
+
+    // one-shot fetch used for manual refresh
+    suspend fun getMyTicketForEvent(eventId: String, userId: String): Ticket?
 
     fun observeMyTicketForEvent(
         eventId: String,
