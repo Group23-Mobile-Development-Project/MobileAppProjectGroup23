@@ -1,7 +1,11 @@
 package com.example.eventplanner.ui.navigation
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -36,7 +40,6 @@ import com.example.eventplanner.ui.screens.EventDetailScreen
 import com.example.eventplanner.ui.screens.EventScreen
 import com.example.eventplanner.ui.screens.HomeScreen
 import com.example.eventplanner.ui.screens.LoginScreen
-import com.example.eventplanner.ui.screens.MyTicketScreen   // IMPORTANT: create/rename your ticket screen to this OR change the import
 import com.example.eventplanner.ui.screens.ParticipationScreen
 import com.example.eventplanner.ui.screens.ProfileScreen
 import com.example.eventplanner.ui.screens.SignupScreen
@@ -56,10 +59,7 @@ fun AppNavGraph(
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
-    val showTopUi =
-        currentRoute != "login" &&
-                currentRoute != "signup" &&
-                currentRoute != null
+    val showTopUi = currentRoute != "login" && currentRoute != "signup" && currentRoute != null
 
     val title = when {
         currentRoute == "home" -> "Home"
@@ -80,7 +80,6 @@ fun AppNavGraph(
         }
     }
 
-    // Scaffold OUTSIDE drawer => bottom nav stays visible even when drawer opens
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -105,13 +104,19 @@ fun AppNavGraph(
         }
     ) { innerPadding ->
 
-        // Drawer wraps only the content area (above bottom bar)
+        // Drawer wraps the CONTENT area, but we pad the drawer sheet
+        // so it does not go under TopAppBar or BottomNavBar.
         ModalNavigationDrawer(
             drawerState = drawerState,
             gesturesEnabled = showTopUi,
             drawerContent = {
                 ModalDrawerSheet(
-                    modifier = Modifier.width(240.dp)
+                    modifier = Modifier
+                        .width(240.dp)
+                        .padding(
+                            top = innerPadding.calculateTopPadding(),
+                            bottom = innerPadding.calculateBottomPadding()
+                        )
                 ) {
                     DrawerContent(
                         currentRoute = currentRoute,
@@ -147,30 +152,20 @@ fun AppNavGraph(
 
                 composable("eventDetail/{eventId}") { entry ->
                     val eventId = entry.arguments?.getString("eventId") ?: ""
-                    EventDetailScreen(
-                        eventId = eventId,
-                        navController = navController
-                    )
+                    EventDetailScreen(eventId = eventId, navController = navController)
                 }
 
                 composable("editEvent/{eventId}") { entry ->
                     val eventId = entry.arguments?.getString("eventId") ?: ""
                     val vm: EventViewModel = viewModel()
-                    EditEventScreen(
-                        eventId = eventId,
-                        navController = navController,
-                        viewModel = vm
-                    )
+                    EditEventScreen(eventId = eventId, navController = navController, viewModel = vm)
                 }
 
-                // ✅ THIS IS THE MISSING DESTINATION THAT CAUSED YOUR CRASH
-                composable("myTicket/{eventId}") { entry ->
-                    val eventId = entry.arguments?.getString("eventId") ?: ""
-                    MyTicketScreen(
-                        eventId = eventId,
-                        navController = navController
-                    )
-                }
+                // keep this only if you use it
+                // composable("myTicket/{eventId}") { entry ->
+                //     val eventId = entry.arguments?.getString("eventId") ?: ""
+                //     MyTicketScreen(eventId = eventId, navController = navController)
+                // }
             }
         }
     }
@@ -194,17 +189,13 @@ private fun DrawerContent(
         "profile" to "Profile"
     )
 
-    androidx.compose.foundation.layout.Column(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 18.dp)
     ) {
-        Text(
-            text = "Hi $name",
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(8.dp))
+        Text(text = "Hi $name", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(14.dp))
 
         items.forEach { (route, label) ->
             NavigationDrawerItem(
@@ -215,7 +206,7 @@ private fun DrawerContent(
             )
         }
 
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         NavigationDrawerItem(
             label = { Text("Logout") },
