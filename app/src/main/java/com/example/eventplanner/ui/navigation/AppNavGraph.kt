@@ -36,6 +36,7 @@ import com.example.eventplanner.ui.screens.EventDetailScreen
 import com.example.eventplanner.ui.screens.EventScreen
 import com.example.eventplanner.ui.screens.HomeScreen
 import com.example.eventplanner.ui.screens.LoginScreen
+import com.example.eventplanner.ui.screens.MyTicketScreen   // IMPORTANT: create/rename your ticket screen to this OR change the import
 import com.example.eventplanner.ui.screens.ParticipationScreen
 import com.example.eventplanner.ui.screens.ProfileScreen
 import com.example.eventplanner.ui.screens.SignupScreen
@@ -58,15 +59,16 @@ fun AppNavGraph(
     val showTopUi =
         currentRoute != "login" &&
                 currentRoute != "signup" &&
-                currentRoute != null &&
-                !currentRoute.startsWith("eventDetail/") &&
-                !currentRoute.startsWith("editEvent/")
+                currentRoute != null
 
-    val title = when (currentRoute) {
-        "home" -> "Home"
-        "events" -> "My Events"
-        "participation" -> "Participation"
-        "profile" -> "Profile"
+    val title = when {
+        currentRoute == "home" -> "Home"
+        currentRoute == "events" -> "My Events"
+        currentRoute == "participation" -> "Participation"
+        currentRoute == "profile" -> "Profile"
+        currentRoute?.startsWith("eventDetail/") == true -> "Event Details"
+        currentRoute?.startsWith("editEvent/") == true -> "Edit Event"
+        currentRoute?.startsWith("myTicket/") == true -> "My Ticket"
         else -> "Event Planner"
     }
 
@@ -78,7 +80,7 @@ fun AppNavGraph(
         }
     }
 
-    // Scaffold OUTSIDE drawer => BottomNavBar stays visible even when drawer opens
+    // Scaffold OUTSIDE drawer => bottom nav stays visible even when drawer opens
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -109,7 +111,7 @@ fun AppNavGraph(
             gesturesEnabled = showTopUi,
             drawerContent = {
                 ModalDrawerSheet(
-                    modifier = Modifier.width(240.dp) // reduce drawer width here (220/240/260 etc)
+                    modifier = Modifier.width(240.dp)
                 ) {
                     DrawerContent(
                         currentRoute = currentRoute,
@@ -129,46 +131,47 @@ fun AppNavGraph(
                 }
             }
         ) {
-            AppNavHost(
+            NavHost(
                 navController = navController,
+                startDestination = "login",
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-            )
-        }
-    }
-}
+            ) {
+                composable("login") { LoginScreen(navController = navController) }
+                composable("signup") { SignupScreen(navController = navController) }
+                composable("home") { HomeScreen(navController = navController) }
+                composable("events") { EventScreen(navController = navController) }
+                composable("profile") { ProfileScreen(navController = navController) }
+                composable("participation") { ParticipationScreen(navController = navController) }
 
-@Composable
-private fun AppNavHost(
-    navController: NavHostController,
-    modifier: Modifier
-) {
-    NavHost(
-        navController = navController,
-        startDestination = "login",
-        modifier = modifier
-    ) {
-        composable("login") { LoginScreen(navController = navController) }
-        composable("signup") { SignupScreen(navController = navController) }
-        composable("home") { HomeScreen(navController = navController) }
-        composable("events") { EventScreen(navController = navController) }
-        composable("profile") { ProfileScreen(navController = navController) }
-        composable("participation") { ParticipationScreen(navController = navController) }
+                composable("eventDetail/{eventId}") { entry ->
+                    val eventId = entry.arguments?.getString("eventId") ?: ""
+                    EventDetailScreen(
+                        eventId = eventId,
+                        navController = navController
+                    )
+                }
 
-        composable("eventDetail/{eventId}") { entry ->
-            val eventId = entry.arguments?.getString("eventId") ?: ""
-            EventDetailScreen(eventId = eventId, navController = navController)
-        }
+                composable("editEvent/{eventId}") { entry ->
+                    val eventId = entry.arguments?.getString("eventId") ?: ""
+                    val vm: EventViewModel = viewModel()
+                    EditEventScreen(
+                        eventId = eventId,
+                        navController = navController,
+                        viewModel = vm
+                    )
+                }
 
-        composable("editEvent/{eventId}") { entry ->
-            val eventId = entry.arguments?.getString("eventId") ?: ""
-            val vm: EventViewModel = viewModel()
-            EditEventScreen(
-                eventId = eventId,
-                navController = navController,
-                viewModel = vm
-            )
+                // ✅ THIS IS THE MISSING DESTINATION THAT CAUSED YOUR CRASH
+                composable("myTicket/{eventId}") { entry ->
+                    val eventId = entry.arguments?.getString("eventId") ?: ""
+                    MyTicketScreen(
+                        eventId = eventId,
+                        navController = navController
+                    )
+                }
+            }
         }
     }
 }
