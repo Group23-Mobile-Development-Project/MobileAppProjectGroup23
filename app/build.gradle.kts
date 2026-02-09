@@ -94,4 +94,13 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
 
 
+    // Stripe Payment SDK
+    implementation("com.stripe:stripe-android:20.40.0")
+
+    // For card input form
+    implementation("com.stripe:stripe-android-payments:20.40.0")
+
+    // For coroutine support with Stripe
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
 }
