@@ -91,16 +91,11 @@ dependencies {
     // Firebase BOM is already declared, so just add:
     implementation(libs.firebase.messaging.ktx)
 
-    implementation("com.google.zxing:core:3.5.3")
+    implementation(libs.core)
 
 
-    // Stripe Payment SDK
-    implementation("com.stripe:stripe-android:20.40.0")
+    // Stripe Android SDK (Core)
+    implementation(libs.stripe.android)
 
-    // For card input form
-    implementation("com.stripe:stripe-android-payments:20.40.0")
-
-    // For coroutine support with Stripe
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
 }
