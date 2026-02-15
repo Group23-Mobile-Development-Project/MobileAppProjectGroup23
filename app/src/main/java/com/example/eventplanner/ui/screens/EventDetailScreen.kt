@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.size
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.eventplanner.R
@@ -43,6 +44,8 @@ import com.example.eventplanner.data.model.Ticket
 import com.example.eventplanner.data.model.TicketType
 import com.example.eventplanner.viewmodel.EventViewModel
 import com.example.eventplanner.viewmodel.TicketViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.QrCodeScanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -162,6 +165,24 @@ fun EventDetailContent(
                     ) {
                         Text("My ticket")
                     }
+                }
+            }
+            if (viewModel.isCurrentUserOrganizer(event.organizerId)) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { navController?.navigate("organizerDashboard/${event.id}") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Organizer Dashboard")
                 }
             }
         }

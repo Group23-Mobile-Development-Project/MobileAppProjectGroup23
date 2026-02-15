@@ -28,3 +28,9 @@ enum class PaymentStatus(val value: String) {
     FAILED("failed"),
     CANCELLED("cancelled")
 }
+
+enum class TicketStatus {
+    ISSUED,      // Ticket purchased but not checked in
+    CHECKED_IN,  // Attendee has checked in
+    NO_SHOW      // Event passed without check-in
+}

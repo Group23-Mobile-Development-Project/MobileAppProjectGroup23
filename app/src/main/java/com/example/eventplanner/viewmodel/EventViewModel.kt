@@ -204,6 +204,11 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    fun isCurrentUserOrganizer(organizerId: String): Boolean {
+        val currentUserId = auth.currentUser?.uid
+        return currentUserId == organizerId
+    }
+
 
 
 }
