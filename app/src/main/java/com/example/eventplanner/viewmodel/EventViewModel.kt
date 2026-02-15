@@ -1,29 +1,30 @@
 package com.example.eventplanner.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.eventplanner.data.FirestoreHelper
 import com.example.eventplanner.data.model.Event
-import com.example.eventplanner.data.model.PaymentStatus
-import com.example.eventplanner.data.model.Ticket
-import com.example.eventplanner.data.repository.TicketTokenUtil
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
-import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class EventViewModel : ViewModel() {
 
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.firestore.FirebaseFirestore
+
+
+import android.util.Log
+
+
+
+
+class EventViewModel : ViewModel() {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+
     val currentUser = auth.currentUser
 
     private val firestoreHelper = FirestoreHelper()
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
     private val _events = MutableStateFlow<List<Event>>(emptyList())
     val events: StateFlow<List<Event>> = _events
@@ -37,6 +38,7 @@ class EventViewModel : ViewModel() {
     private val _selectedEvent = MutableStateFlow<Event?>(null)
     val selectedEvent: StateFlow<Event?> = _selectedEvent
 
+    // Fetch all events for the logged-in user
     fun fetchUserEvents() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -53,6 +55,7 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    // Fetch all events for everyone in homescreen
     fun fetchAllEvents() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -68,6 +71,7 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    // Create a new event
     fun createEvent(event: Event) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -87,6 +91,7 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    // Fetch the event by ID
     fun fetchEventById(eventId: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -102,6 +107,7 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    // RSVP to the event (Attending or Not Attending)
     fun updateRSVPStatus(eventId: String, status: String) {
         val userId = currentUser?.uid ?: return
         viewModelScope.launch {
@@ -109,10 +115,11 @@ class EventViewModel : ViewModel() {
             try {
                 val updated = firestoreHelper.updateRSVPStatus(eventId, userId, status)
                 if (updated) {
-                    fetchEventById(eventId)
+                    fetchEventById(eventId) // Refresh event data
 
+                    //Subscribe or Unsubscribe to topic for notification
                     val topic = "event_$eventId"
-                    if (status == "attending") {
+                    if (status == "Attending") {
                         FirebaseMessaging.getInstance().subscribeToTopic(topic)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
@@ -144,6 +151,20 @@ class EventViewModel : ViewModel() {
         }
     }
 
+
+    fun saveUserFcmToken(userId: String) {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                FirebaseFirestore.getInstance().collection("users")
+                    .document(userId)
+                    .update("fcmToken", token)
+            }
+        }
+    }
+
+
+    // Delete an event by ID
     fun deleteEvent(eventId: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -163,6 +184,7 @@ class EventViewModel : ViewModel() {
         }
     }
 
+
     fun updateEventDetails(eventId: String, updatedFields: Map<String, Any>) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -170,7 +192,7 @@ class EventViewModel : ViewModel() {
                 val success = firestoreHelper.updateEventDetails(eventId, updatedFields)
                 if (success) {
                     _error.value = null
-                    fetchEventById(eventId)
+                    fetchEventById(eventId) // Refresh the selected event
                 } else {
                     _error.value = "Failed to update event"
                 }
@@ -182,103 +204,7 @@ class EventViewModel : ViewModel() {
         }
     }
 
-    // Option A (fixed): one atomic transaction:
-    // - reads event + ticket first
-    // - then updates attendees + writes ticket
-    fun getFreeTicketAndAttend(eventId: String, onDone: (() -> Unit)? = null) {
-        val user = currentUser ?: run {
-            _error.value = "Not signed in"
-            return
-        }
 
-        val uid = user.uid
-        val userName = user.displayName ?: user.email ?: "Unknown"
 
-        val eventRef = db.collection("events").document(eventId)
-        val ticketId = "${eventId}_${uid}"
-        val ticketRef = db.collection("tickets").document(ticketId)
-
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                db.runTransaction { txn ->
-                    // READS FIRST (important!)
-                    val eventSnap = txn.get(eventRef)
-                    val existingTicketSnap = txn.get(ticketRef)
-
-                    // build/update attendees list
-                    val current = eventSnap.get("attendees") as? List<*>
-                    val currentMaps = current?.mapNotNull { it as? Map<String, Any> } ?: emptyList()
-
-                    var found = false
-                    val updated = currentMaps.map { m ->
-                        val mUid = m["userId"] as? String
-                        if (mUid == uid) {
-                            found = true
-                            mapOf(
-                                "userId" to uid,
-                                "userName" to userName,
-                                "status" to "attending"
-                            )
-                        } else {
-                            m
-                        }
-                    }.toMutableList()
-
-                    if (!found) {
-                        updated.add(
-                            mapOf(
-                                "userId" to uid,
-                                "userName" to userName,
-                                "status" to "attending"
-                            )
-                        )
-                    }
-
-                    // ticket: keep existing token if present, otherwise generate
-                    val rawToken = existingTicketSnap.getString("qrToken")
-                        ?: TicketTokenUtil.generateTokenUrlSafe()
-
-                    val tokenHash = TicketTokenUtil.sha256Hex(rawToken)
-                    val now = Timestamp.now()
-
-                    val ticket = Ticket(
-                        id = ticketId,
-                        eventId = eventId,
-                        userId = uid,
-                        userName = userName,
-                        issuedAt = existingTicketSnap.getTimestamp("issuedAt") ?: now,
-                        paymentRequired = false,
-                        paymentStatus = PaymentStatus.CONFIRMED.value,
-                        paymentIntentId = null,
-                        qrTokenHash = tokenHash,
-                        qrToken = rawToken,
-                        checkedInAt = null,
-                        checkedInBy = null,
-                        updatedAt = now
-                    )
-
-                    // WRITES AFTER READS
-                    txn.update(eventRef, "attendees", updated)
-                    txn.set(ticketRef, ticket, SetOptions.merge())
-
-                    null
-                }.addOnSuccessListener {
-                    fetchEventById(eventId)
-
-                    val topic = "event_$eventId"
-                    FirebaseMessaging.getInstance().subscribeToTopic(topic)
-
-                    _error.value = null
-                    onDone?.invoke()
-                }.addOnFailureListener { e ->
-                    _error.value = "Failed to get free ticket: ${e.message}"
-                }
-            } catch (e: Exception) {
-                _error.value = "Failed to get free ticket: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
 }
+

@@ -214,6 +214,24 @@ fun EventDetailContent(
                     Text("Organizer Dashboard")
                 }
             }
+            if (viewModel.isCurrentUserOrganizer(event.organizerId)) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { navController?.navigate("organizerDashboard/${event.id}") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Organizer Dashboard")
+                }
+            }
         }
 
         if (viewModel.isCurrentUserOrganizer(event.organizerId)) {
