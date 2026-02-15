@@ -72,6 +72,26 @@ class FirestoreTicketRepository(
         return CreateOrGetTicketResult(ticket = ticket, rawTokenForQr = rawToken)
     }
 
+    override suspend fun searchTicketsByAttendee(eventId: String, query: String): Result<List<Ticket>> {
+        return try {
+            // Simple client-side filtering since Firestore doesn't support native text search well
+            val snapshot = ticketsCol
+                .whereEqualTo("eventId", eventId)
+                .get()
+                .await()
+
+            val tickets = snapshot.documents.mapNotNull { doc ->
+                doc.toObject<Ticket>()?.copy(id = doc.id)
+            }.filter { ticket ->
+                ticket.userName?.contains(query, ignoreCase = true) == true ||
+                        ticket.id.contains(query, ignoreCase = true)
+            }
+
+            Result.success(tickets)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
     override suspend fun setPaymentPending(ticketId: String, paymentIntentId: String?) {
         val updates = hashMapOf<String, Any>(
             "paymentStatus" to PaymentStatus.PENDING.value,

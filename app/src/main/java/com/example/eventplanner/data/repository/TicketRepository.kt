@@ -29,6 +29,8 @@ interface TicketRepository {
     // one-shot fetch used for manual refresh
     suspend fun getMyTicketForEvent(eventId: String, userId: String): Ticket?
 
+    suspend fun searchTicketsByAttendee(eventId: String, query: String): Result<List<Ticket>>
+
     fun observeMyTicketForEvent(
         eventId: String,
         userId: String

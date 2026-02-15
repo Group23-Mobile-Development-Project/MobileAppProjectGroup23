@@ -91,7 +91,11 @@ dependencies {
     // Firebase BOM is already declared, so just add:
     implementation(libs.firebase.messaging.ktx)
 
-    implementation("com.google.zxing:core:3.5.3")
+    implementation(libs.core)
+
+
+    // Stripe Android SDK (Core)
+    implementation(libs.stripe.android)
 
 
 }

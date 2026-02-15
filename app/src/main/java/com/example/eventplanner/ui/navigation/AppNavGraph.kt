@@ -44,6 +44,7 @@ import com.example.eventplanner.ui.screens.ParticipationScreen
 import com.example.eventplanner.ui.screens.ProfileScreen
 import com.example.eventplanner.ui.screens.SignupScreen
 import com.example.eventplanner.viewmodel.EventViewModel
+import com.example.eventplanner.ui.screens.OrganizerDashboardScreen
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
@@ -161,6 +162,13 @@ fun AppNavGraph(
                     EditEventScreen(eventId = eventId, navController = navController, viewModel = vm)
                 }
 
+                composable("organizerDashboard/{eventId}") { entry ->
+                    val eventId = entry.arguments?.getString("eventId") ?: ""
+                    OrganizerDashboardScreen(
+                        eventId = eventId,
+                        navController = navController
+                    )
+                }
                 // keep this only if you use it
                 // composable("myTicket/{eventId}") { entry ->
                 //     val eventId = entry.arguments?.getString("eventId") ?: ""
