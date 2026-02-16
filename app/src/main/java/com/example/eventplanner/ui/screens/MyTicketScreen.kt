@@ -33,11 +33,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.eventplanner.R
+import com.example.eventplanner.data.repository.TicketTokenUtil
 import com.example.eventplanner.utils.QrCodeUtil
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import java.util.UUID
 
 private data class MyTicketUi(
     val docPath: String,
@@ -61,6 +61,7 @@ fun MyTicketScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var ticket by remember { mutableStateOf<MyTicketUi?>(null) }
+    var tokenWriteError by remember { mutableStateOf<String?>(null) }
 
     fun fetchTicket() {
         val user = FirebaseAuth.getInstance().currentUser
@@ -74,17 +75,18 @@ fun MyTicketScreen(
         val uid = user.uid
         isLoading = true
         error = null
+        tokenWriteError = null
         ticket = null
 
-        val subcollectionRef = db.collection("events").document(eventId).collection("tickets").document(uid)
+        val subRef = db.collection("events").document(eventId).collection("tickets").document(uid)
         val topLevelId = "${eventId}_${uid}"
-        val topLevelRef = db.collection("tickets").document(topLevelId)
+        val topRef = db.collection("tickets").document(topLevelId)
 
-        subcollectionRef.get()
+        subRef.get()
             .addOnSuccessListener { subDoc ->
                 if (subDoc.exists()) {
                     ticket = MyTicketUi(
-                        docPath = subcollectionRef.path,
+                        docPath = subRef.path,
                         ticketId = subDoc.id,
                         eventId = subDoc.getString("eventId") ?: eventId,
                         userId = subDoc.getString("userId") ?: uid,
@@ -95,11 +97,11 @@ fun MyTicketScreen(
                     )
                     isLoading = false
                 } else {
-                    topLevelRef.get()
+                    topRef.get()
                         .addOnSuccessListener { topDoc ->
                             if (topDoc.exists()) {
                                 ticket = MyTicketUi(
-                                    docPath = topLevelRef.path,
+                                    docPath = topRef.path,
                                     ticketId = topDoc.id,
                                     eventId = topDoc.getString("eventId") ?: eventId,
                                     userId = topDoc.getString("userId") ?: uid,
@@ -125,24 +127,22 @@ fun MyTicketScreen(
             }
     }
 
-    fun ensureQrToken(t: MyTicketUi) {
-        if (!t.qrToken.isNullOrBlank()) return
-
-        val newToken = UUID.randomUUID().toString()
+    fun generateAndSaveToken(t: MyTicketUi) {
+        val newToken = TicketTokenUtil.generateTokenUrlSafe()
         val ref = db.document(t.docPath)
+
+        tokenWriteError = null
 
         ref.set(mapOf("qrToken" to newToken), SetOptions.merge())
             .addOnSuccessListener {
                 ticket = t.copy(qrToken = newToken)
             }
-            .addOnFailureListener {
-                // ignore, user can still refresh
+            .addOnFailureListener { ex ->
+                tokenWriteError = ex.message ?: "Failed to save qrToken"
             }
     }
 
-    LaunchedEffect(eventId) {
-        fetchTicket()
-    }
+    LaunchedEffect(eventId) { fetchTicket() }
 
     Scaffold(
         topBar = {
@@ -174,7 +174,6 @@ fun MyTicketScreen(
 
             if (error != null) {
                 Text("Error: ${error ?: "Unknown"}", color = MaterialTheme.colorScheme.error)
-                Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = { fetchTicket() }, modifier = Modifier.fillMaxWidth()) {
                     Text("Retry")
                 }
@@ -193,11 +192,21 @@ fun MyTicketScreen(
             Text("Name: ${t.userName ?: "-"}")
             Text("Checked in: ${if (t.checkedInAt != null) "yes" else "no"}")
 
-            ensureQrToken(t)
-
-            val token = ticket?.qrToken
+            val token = t.qrToken
             if (token.isNullOrBlank()) {
-                Text("QR token is missing. Tap refresh.")
+                Text("QR token is missing.")
+                if (tokenWriteError != null) {
+                    Text("Reason: ${tokenWriteError ?: ""}", color = MaterialTheme.colorScheme.error)
+                    Text("If this says permission denied, you must rebook after updating booking code or change Firestore rules.")
+                }
+
+                Button(
+                    onClick = { generateAndSaveToken(t) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Generate QR token")
+                }
+
                 TextButton(onClick = { fetchTicket() }) { Text("Refresh") }
                 return@Column
             }
@@ -208,9 +217,7 @@ fun MyTicketScreen(
 
             val sizeDp = 240.dp
             val sizePx = with(LocalDensity.current) { sizeDp.roundToPx() }
-            val qrBitmap = remember(payload) {
-                QrCodeUtil.generateQrBitmap(payload, sizePx)
-            }
+            val qrBitmap = remember(payload) { QrCodeUtil.generateQrBitmap(payload, sizePx) }
 
             Image(
                 bitmap = qrBitmap.asImageBitmap(),
@@ -219,10 +226,7 @@ fun MyTicketScreen(
             )
 
             Spacer(modifier = Modifier.height(4.dp))
-
-            TextButton(onClick = { fetchTicket() }) {
-                Text("Refresh")
-            }
+            TextButton(onClick = { fetchTicket() }) { Text("Refresh") }
         }
     }
 }

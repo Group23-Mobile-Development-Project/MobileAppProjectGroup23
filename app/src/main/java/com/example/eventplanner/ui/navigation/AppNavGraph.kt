@@ -39,6 +39,7 @@ import com.example.eventplanner.ui.screens.EventDetailScreen
 import com.example.eventplanner.ui.screens.EventScreen
 import com.example.eventplanner.ui.screens.HomeScreen
 import com.example.eventplanner.ui.screens.LoginScreen
+import com.example.eventplanner.ui.screens.MyTicketScreen
 import com.example.eventplanner.ui.screens.OrganizerDashboardScreen
 import com.example.eventplanner.ui.screens.ParticipationScreen
 import com.example.eventplanner.ui.screens.ProfileScreen
@@ -167,11 +168,10 @@ fun AppNavGraph(
                     )
                 }
 
-                // keep this only if you use it
-                // composable("myTicket/{eventId}") { entry ->
-                //     val eventId = entry.arguments?.getString("eventId") ?: ""
-                //     MyTicketScreen(eventId = eventId, navController = navController)
-                // }
+                composable("myTicket/{eventId}") { entry ->
+                    val eventId = entry.arguments?.getString("eventId") ?: ""
+                    MyTicketScreen(eventId = eventId, navController = navController)
+                }
             }
         }
     }

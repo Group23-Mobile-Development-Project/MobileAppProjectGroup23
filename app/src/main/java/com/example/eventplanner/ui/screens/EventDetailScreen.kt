@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.eventplanner.data.repository.TicketTokenUtil
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -64,13 +65,8 @@ fun EventDetailScreen(
             .collection("tickets")
             .document(uid)
             .get()
-            .addOnSuccessListener { doc ->
-                isBooked = doc.exists()
-            }
-            .addOnFailureListener {
-                // if we can't read ticket for some reason, don't block booking UI
-                isBooked = false
-            }
+            .addOnSuccessListener { doc -> isBooked = doc.exists() }
+            .addOnFailureListener { isBooked = false }
     }
 
     fun readEvent() {
@@ -113,15 +109,11 @@ fun EventDetailScreen(
                 date = getAnyString("date", "eventDate")
                 time = getAnyString("time", "eventTime")
                 location = getAnyString("location", "venue", "place")
-
                 price = getAnyNumberAsString("price", "ticketPrice", "amount")
                 capacity = getAnyNumberAsString("capacity", "availableSeats", "seats")
-
                 organizerId = getAnyString("organizerId", "organizerUid", "createdBy")
 
                 isLoading = false
-
-                // also refresh booking status after event is loaded
                 refreshBookedState()
             }
             .addOnFailureListener { ex ->
@@ -143,13 +135,14 @@ fun EventDetailScreen(
             ?: user.email?.substringBefore("@")
             ?: "User"
 
+        val qrToken = TicketTokenUtil.generateTokenUrlSafe()
+
         bookingInProgress = true
 
         val eventRef = db.collection("events").document(eventId)
         val ticketRef = eventRef.collection("tickets").document(uid)
 
         db.runTransaction { txn ->
-            // prevent double booking: if ticket exists, stop
             val existingTicket = txn.get(ticketRef)
             if (existingTicket.exists()) {
                 throw IllegalStateException("You already booked this event")
@@ -166,9 +159,7 @@ fun EventDetailScreen(
 
             if (seatsField != null) {
                 val currentSeats = (eventSnap.get(seatsField) as? Long) ?: 0L
-                if (currentSeats <= 0L) {
-                    throw IllegalStateException("No seats available")
-                }
+                if (currentSeats <= 0L) throw IllegalStateException("No seats available")
                 txn.update(eventRef, seatsField, currentSeats - 1L)
             }
 
@@ -177,7 +168,8 @@ fun EventDetailScreen(
                 "userName" to displayName,
                 "bookedAt" to FieldValue.serverTimestamp(),
                 "checkedInAt" to null,
-                "eventId" to eventId
+                "eventId" to eventId,
+                "qrToken" to qrToken
             )
 
             txn.set(ticketRef, ticketData, SetOptions.merge())
@@ -186,22 +178,16 @@ fun EventDetailScreen(
             bookingInProgress = false
             isBooked = true
             Toast.makeText(ctx, "Ticket booked successfully", Toast.LENGTH_SHORT).show()
-
-            // refresh event (capacity) and move user to bookings screen
             readEvent()
-            navController.navigate("participation")
+            navController.navigate("myTicket/$eventId")
         }.addOnFailureListener { ex ->
             bookingInProgress = false
             Toast.makeText(ctx, ex.message ?: "Booking failed", Toast.LENGTH_SHORT).show()
-
-            // if it failed because already booked, update UI state
             refreshBookedState()
         }
     }
 
-    LaunchedEffect(eventId) {
-        readEvent()
-    }
+    LaunchedEffect(eventId) { readEvent() }
 
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     val isOrganizer = userId != null && organizerId != null && userId == organizerId
@@ -249,13 +235,11 @@ fun EventDetailScreen(
                         Button(
                             onClick = { navController.navigate("organizerDashboard/$eventId") },
                             enabled = !bookingInProgress
-                        ) {
-                            Text("Open organizer dashboard")
-                        }
+                        ) { Text("Open organizer dashboard") }
                     } else {
                         if (isBooked) {
-                            Button(onClick = { navController.navigate("participation") }) {
-                                Text("View my booking")
+                            Button(onClick = { navController.navigate("myTicket/$eventId") }) {
+                                Text("View ticket QR")
                             }
                         } else {
                             Button(
@@ -267,9 +251,7 @@ fun EventDetailScreen(
                         }
                     }
 
-                    Button(onClick = { navController.navigateUp() }) {
-                        Text("Back")
-                    }
+                    Button(onClick = { navController.navigateUp() }) { Text("Back") }
                 }
             }
         }
