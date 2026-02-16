@@ -14,6 +14,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.EventPlanner"
         tools:targetApi="31">
+        <!-- Stripe Configuration -->
+        <meta-data
+            android:name="com.stripe.android.publishableKey"
+            android:value="YOUR_STRIPE_PUBLISHABLE_TEST_KEY" />
 
         <activity
             android:name=".MainActivity"
