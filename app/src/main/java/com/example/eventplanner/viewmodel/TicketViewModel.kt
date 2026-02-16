@@ -29,17 +29,17 @@ class TicketViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    private val tokenCache = mutableMapOf<String, String>()
-
     private var observeJob: Job? = null
     private var activeEventId: String? = null
 
+    // caches raw token if you want to avoid re-reading it from ticket.qrToken
+    private val tokenCache = mutableMapOf<String, String>()
+
     fun start(eventId: String) {
         activeEventId = eventId
-        val uid = auth.currentUser?.uid
-        if (uid == null) {
-            _error.value = "Not signed in"
+        val uid = auth.currentUser?.uid ?: run {
             _ticket.value = null
+            _error.value = "Not signed in"
             return
         }
 
@@ -47,6 +47,7 @@ class TicketViewModel : ViewModel() {
         observeJob = viewModelScope.launch {
             repo.observeMyTicketForEvent(eventId, uid).collect { t ->
                 _ticket.value = t
+                t?.qrToken?.let { tokenCache[t.id] = it }
             }
         }
     }
@@ -82,15 +83,14 @@ class TicketViewModel : ViewModel() {
 
     fun refresh() {
         val eventId = activeEventId ?: return
-        val uid = auth.currentUser?.uid ?: run {
-            _error.value = "Not signed in"
-            return
-        }
+        val uid = auth.currentUser?.uid ?: return
 
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _ticket.value = repo.getMyTicketForEvent(eventId, uid)
+                val t = repo.getMyTicketForEvent(eventId, uid)
+                _ticket.value = t
+                t?.qrToken?.let { tokenCache[t.id] = it }
                 _error.value = null
             } catch (e: Exception) {
                 _error.value = "Failed to refresh ticket: ${e.message}"
@@ -106,8 +106,8 @@ class TicketViewModel : ViewModel() {
             try {
                 val raw = repo.rotateQrToken(ticketId)
                 tokenCache[ticketId] = raw
-                // ticket doc will also update via snapshot listener
                 _error.value = null
+                refresh()
             } catch (e: Exception) {
                 _error.value = "Failed to rotate QR token: ${e.message}"
             } finally {
