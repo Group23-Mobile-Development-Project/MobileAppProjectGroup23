@@ -120,6 +120,7 @@ fun EventDetailContent(
     val context = LocalContext.current
 
     val ticket by ticketViewModel.ticket.collectAsState()
+
     val ticketingEnabled = event.ticketingEnabled
     val paymentRequired = event.ticketingEnabled && event.ticketType == TicketType.PAID.value
     val ticketStatusText = ticketStatusText(ticket, ticketingEnabled, paymentRequired)
@@ -150,7 +151,29 @@ fun EventDetailContent(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        Text("Ticket: $ticketStatusText", fontSize = 16.sp)
+            Text("Ticket: $ticketStatusText", fontSize = 16.sp)
+
+            if (ticketingEnabled) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (ticket == null) {
+                        Button(
+                            onClick = {
+                                if (paymentRequired) {
+                                    ticketViewModel.createOrGetTicket(event.id, true)
+                                } else {
+                                    viewModel.getFreeTicketAndAttend(event.id) {
+                                        ticketViewModel.refresh()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(if (paymentRequired) "Get ticket" else "Get free ticket")
+                        }
+                    }
 
         if (ticketingEnabled) {
             Row(
