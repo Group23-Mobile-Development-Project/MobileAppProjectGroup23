@@ -1,110 +1,106 @@
 package com.example.eventplanner.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.eventplanner.data.model.Ticket
-import com.example.eventplanner.data.repository.FirestoreTicketRepository
-import com.example.eventplanner.data.repository.TicketRepository
 import com.example.eventplanner.ui.screens.TicketCounts
-import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.asStateFlow
+
+data class TicketUi(
+    val id: String = "",
+    val userName: String? = null,
+    val checkedInAt: Timestamp? = null
+)
 
 class OrganizerViewModel : ViewModel() {
 
-    private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
-    private val repository: TicketRepository = FirestoreTicketRepository(db)
 
-    private val _tickets = MutableStateFlow<List<Ticket>>(emptyList())
-    val tickets: StateFlow<List<Ticket>> = _tickets
+    private val _tickets = MutableStateFlow<List<TicketUi>>(emptyList())
+    val tickets: StateFlow<List<TicketUi>> = _tickets.asStateFlow()
+
+    private val _ticketCounts = MutableStateFlow(TicketCounts(issued = 0, checkedIn = 0, notArrived = 0))
+    val ticketCounts: StateFlow<TicketCounts> = _ticketCounts.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error
-
-    private val _ticketCounts = MutableStateFlow(TicketCounts(0, 0, 0))
-    val ticketCounts: StateFlow<TicketCounts> = _ticketCounts
+    val error: StateFlow<String?> = _error.asStateFlow()
 
     private var currentEventId: String? = null
+    private var ticketListener: ListenerRegistration? = null
 
     fun loadTicketsForEvent(eventId: String) {
+        if (currentEventId == eventId && ticketListener != null) return
+
         currentEventId = eventId
+        _isLoading.value = true
+        _error.value = null
 
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+        ticketListener?.remove()
 
-            try {
-                // Observe tickets in real-time
-                repository.observeTicketsForEvent(eventId)
-                    .catch { exception ->
-                        _error.value = "Failed to load tickets: ${exception.message}"
-                        _isLoading.value = false
-                    }
-                    .collect { ticketList ->
-                        _tickets.value = ticketList
-                        updateTicketCounts(ticketList)
-                        _isLoading.value = false
-                    }
-            } catch (e: Exception) {
-                _error.value = "Error: ${e.message}"
+        // Assumption: events/{eventId}/tickets
+        ticketListener = db
+            .collection("events")
+            .document(eventId)
+            .collection("tickets")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    _error.value = e.message ?: "Failed to load tickets"
+                    _isLoading.value = false
+                    return@addSnapshotListener
+                }
+
+                val list = snapshot?.documents?.map { doc ->
+                    val userName = doc.getString("userName")
+                        ?: doc.getString("attendeeName")
+                        ?: doc.getString("name")
+
+                    TicketUi(
+                        id = doc.id,
+                        userName = userName,
+                        checkedInAt = doc.getTimestamp("checkedInAt")
+                    )
+                }.orEmpty()
+
+                _tickets.value = list
+                updateCounts(list)
                 _isLoading.value = false
             }
-        }
     }
 
     fun markTicketCheckedIn(ticketId: String) {
-        val organizerUid = auth.currentUser?.uid ?: run {
-            _error.value = "Not authenticated"
-            return
-        }
-
-        viewModelScope.launch {
-            try {
-                repository.markCheckedIn(ticketId, organizerUid)
-                // The flow will automatically update via observeTicketsForEvent
-            } catch (e: Exception) {
-                _error.value = "Failed to check in: ${e.message}"
-            }
-        }
-    }
-
-    fun searchTickets(query: String) {
         val eventId = currentEventId ?: return
-
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val result = repository.searchTicketsByAttendee(eventId, query)
-                result.onSuccess { searchedTickets ->
-                    _tickets.value = searchedTickets
-                    updateTicketCounts(searchedTickets)
-                }.onFailure { exception ->
-                    _error.value = "Search failed: ${exception.message}"
-                }
-            } catch (e: Exception) {
-                _error.value = "Search error: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    private fun updateTicketCounts(tickets: List<Ticket>) {
-        val issued = tickets.size
-        val checkedIn = tickets.count { it.checkedInAt != null }
-        val notArrived = tickets.count { it.checkedInAt == null }
-
-        _ticketCounts.value = TicketCounts(issued, checkedIn, notArrived)
-    }
-
-    fun clearError() {
         _error.value = null
+
+        db.collection("events")
+            .document(eventId)
+            .collection("tickets")
+            .document(ticketId)
+            .update(mapOf("checkedInAt" to FieldValue.serverTimestamp()))
+            .addOnFailureListener { ex ->
+                _error.value = ex.message ?: "Failed to check in ticket"
+            }
+    }
+
+    private fun updateCounts(list: List<TicketUi>) {
+        val issued = list.size
+        val checkedIn = list.count { it.checkedInAt != null }
+        _ticketCounts.value = TicketCounts(
+            issued = issued,
+            checkedIn = checkedIn,
+            notArrived = issued - checkedIn
+        )
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        ticketListener?.remove()
+        ticketListener = null
     }
 }

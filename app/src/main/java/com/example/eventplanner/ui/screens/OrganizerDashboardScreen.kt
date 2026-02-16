@@ -17,11 +17,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ConfirmationNumber
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button  // <-- Move this import here
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,16 +40,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.eventplanner.data.model.Ticket
 import com.example.eventplanner.viewmodel.OrganizerViewModel
+import com.example.eventplanner.viewmodel.TicketUi
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,19 +57,16 @@ fun OrganizerDashboardScreen(
     navController: NavHostController? = null,
     viewModel: OrganizerViewModel = viewModel()
 ) {
-    // Load tickets for this event
     viewModel.loadTicketsForEvent(eventId)
 
-    val tickets by viewModel.tickets.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val ticketCounts by viewModel.ticketCounts.collectAsState()
+    val tickets by viewModel.tickets.collectAsState(initial = emptyList())
+    val isLoading by viewModel.isLoading.collectAsState(initial = false)
+    val error by viewModel.error.collectAsState(initial = null)
+    val ticketCounts by viewModel.ticketCounts.collectAsState(initial = TicketCounts(0, 0, 0))
 
-    // Search state
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
-    // Filter tickets based on search
     val filteredTickets = if (searchQuery.isBlank()) {
         tickets
     } else {
@@ -95,11 +89,7 @@ fun OrganizerDashboardScreen(
                     }
                 },
                 actions = {
-                    // QR Scanner button - we'll implement in Step 2
-                    IconButton(onClick = {
-                        // Navigate to scanner screen
-                        navController?.navigate("qrScanner/$eventId")
-                    }) {
+                    IconButton(onClick = { navController?.navigate("qrScanner/$eventId") }) {
                         Icon(
                             imageVector = Icons.Default.QrCodeScanner,
                             contentDescription = "Scan QR Code"
@@ -117,31 +107,25 @@ fun OrganizerDashboardScreen(
         ) {
             when {
                 isLoading && tickets.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
+
                 error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             text = "Error: $error",
                             color = MaterialTheme.colorScheme.error
                         )
                     }
                 }
+
                 else -> {
-                    // Ticket Count Cards
                     TicketCountCards(counts = ticketCounts)
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Search Bar
                     SearchBar(
                         query = searchQuery,
                         onQueryChange = { searchQuery = it },
@@ -156,13 +140,10 @@ fun OrganizerDashboardScreen(
                                 contentDescription = "Search"
                             )
                         }
-                    ) {
-                        // Search results are shown in real-time, no need for suggestions
-                    }
+                    ) {}
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Tickets List
                     Text(
                         text = "Tickets (${filteredTickets.size})",
                         style = MaterialTheme.typography.titleLarge,
@@ -171,16 +152,11 @@ fun OrganizerDashboardScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(filteredTickets) { ticket ->
                             TicketItem(
                                 ticket = ticket,
-                                onCheckInClick = {
-                                    // We'll implement this in Step 3
-                                    // viewModel.markTicketCheckedIn(ticket.id)
-                                }
+                                onCheckInClick = { viewModel.markTicketCheckedIn(ticket.id) }
                             )
                         }
                     }
@@ -230,9 +206,7 @@ fun CountCard(
         modifier = Modifier
             .width(100.dp)
             .height(100.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.1f)
-        ),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
@@ -258,6 +232,8 @@ fun CountCard(
                 color = color
             )
 
+            Spacer(modifier = Modifier.height(2.dp))
+
             Text(
                 text = title,
                 fontSize = 12.sp,
@@ -269,7 +245,7 @@ fun CountCard(
 
 @Composable
 fun TicketItem(
-    ticket: Ticket,
+    ticket: TicketUi,
     onCheckInClick: () -> Unit
 ) {
     val isCheckedIn = ticket.checkedInAt != null
@@ -292,9 +268,7 @@ fun TicketItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = ticket.userName ?: "Unknown",
                     fontWeight = FontWeight.Bold,
@@ -321,7 +295,7 @@ fun TicketItem(
                 Button(
                     onClick = onCheckInClick,
                     modifier = Modifier.width(100.dp),
-                    enabled = !isCheckedIn
+                    enabled = true
                 ) {
                     Text("Check In")
                 }
@@ -336,8 +310,6 @@ fun TicketItem(
         }
     }
 }
-
-
 
 data class TicketCounts(
     val issued: Int,

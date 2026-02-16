@@ -1,7 +1,6 @@
 package com.example.eventplanner.ui.navigation
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,11 +39,11 @@ import com.example.eventplanner.ui.screens.EventDetailScreen
 import com.example.eventplanner.ui.screens.EventScreen
 import com.example.eventplanner.ui.screens.HomeScreen
 import com.example.eventplanner.ui.screens.LoginScreen
+import com.example.eventplanner.ui.screens.OrganizerDashboardScreen
 import com.example.eventplanner.ui.screens.ParticipationScreen
 import com.example.eventplanner.ui.screens.ProfileScreen
 import com.example.eventplanner.ui.screens.SignupScreen
 import com.example.eventplanner.viewmodel.EventViewModel
-import com.example.eventplanner.ui.screens.OrganizerDashboardScreen
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
@@ -105,8 +104,6 @@ fun AppNavGraph(
         }
     ) { innerPadding ->
 
-        // Drawer wraps the CONTENT area, but we pad the drawer sheet
-        // so it does not go under TopAppBar or BottomNavBar.
         ModalNavigationDrawer(
             drawerState = drawerState,
             gesturesEnabled = showTopUi,
@@ -169,6 +166,7 @@ fun AppNavGraph(
                         navController = navController
                     )
                 }
+
                 // keep this only if you use it
                 // composable("myTicket/{eventId}") { entry ->
                 //     val eventId = entry.arguments?.getString("eventId") ?: ""
@@ -197,24 +195,31 @@ private fun DrawerContent(
         "profile" to "Profile"
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 18.dp)
-    ) {
-        Text(text = "Hi $name", style = MaterialTheme.typography.titleLarge)
-        Spacer(modifier = Modifier.height(14.dp))
+    Column(modifier = Modifier.padding(12.dp)) {
+        Text(
+            text = "Hi, $name",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         items.forEach { (route, label) ->
+            val selected = currentRoute == route
             NavigationDrawerItem(
                 label = { Text(label) },
-                selected = currentRoute == route,
+                selected = selected,
                 onClick = { onNavigate(route) },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                colors = NavigationDrawerItemDefaults.colors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         NavigationDrawerItem(
             label = { Text("Logout") },
@@ -222,11 +227,10 @@ private fun DrawerContent(
             onClick = onLogout,
             icon = {
                 Icon(
-                    imageVector = Icons.Filled.ExitToApp,
+                    imageVector = Icons.Default.ExitToApp,
                     contentDescription = "Logout"
                 )
-            },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            }
         )
     }
 }
