@@ -3,10 +3,9 @@ package com.example.eventplanner.data.repository
 import com.example.eventplanner.data.model.PaymentStatus
 import com.example.eventplanner.data.model.Ticket
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.ktx.toObject
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -18,147 +17,95 @@ class FirestoreTicketRepository(
 
     private val ticketsCol = db.collection("tickets")
 
+    private fun ticketId(eventId: String, userId: String): String = "${eventId}_${userId}"
+
+    override fun observeMyTicketForEvent(eventId: String, userId: String): Flow<Ticket?> = callbackFlow {
+        val docRef = ticketsCol.document(ticketId(eventId, userId))
+
+        val reg: ListenerRegistration = docRef.addSnapshotListener { snap, err ->
+            if (err != null) {
+                trySend(null)
+                return@addSnapshotListener
+            }
+            if (snap == null || !snap.exists()) {
+                trySend(null)
+                return@addSnapshotListener
+            }
+            trySend(snap.toObject(Ticket::class.java))
+        }
+
+        awaitClose { reg.remove() }
+    }
+
+    override suspend fun getMyTicketForEvent(eventId: String, userId: String): Ticket? {
+        val snap = ticketsCol.document(ticketId(eventId, userId)).get().await()
+        if (!snap.exists()) return null
+        return snap.toObject(Ticket::class.java)
+    }
+
     override suspend fun createOrGetTicket(
         eventId: String,
         userId: String,
         userName: String?,
         paymentRequired: Boolean
     ): CreateOrGetTicketResult {
-        // one ticket per user per event
-        val existing = ticketsCol
-            .whereEqualTo("eventId", eventId)
-            .whereEqualTo("userId", userId)
-            .limit(1)
-            .get()
-            .await()
+        val id = ticketId(eventId, userId)
+        val docRef = ticketsCol.document(id)
 
-        if (!existing.isEmpty) {
-            val doc = existing.documents.first()
-            val t = doc.toObject<Ticket>()?.copy(id = doc.id)
-            requireNotNull(t) { "failed to parse existing ticket" }
-            return CreateOrGetTicketResult(ticket = t, rawTokenForQr = null)
+        val existingSnap = docRef.get().await()
+        if (existingSnap.exists()) {
+            val existing = existingSnap.toObject(Ticket::class.java)
+                ?: throw IllegalStateException("Ticket exists but could not be parsed")
+            return CreateOrGetTicketResult(existing, null)
         }
 
         val rawToken = TicketTokenUtil.generateTokenUrlSafe()
         val tokenHash = TicketTokenUtil.sha256Hex(rawToken)
         val now = Timestamp.now()
 
-        val docRef = ticketsCol.document()
-
-        val initialStatus = if (paymentRequired) {
-            PaymentStatus.PENDING.value
-        } else {
-            // free ticket can be confirmed immediately
-            PaymentStatus.CONFIRMED.value
-        }
-
-        val ticket = Ticket(
-            id = docRef.id,
-            eventId = eventId,
-            userId = userId,
-            userName = userName,
-            issuedAt = now,
-            paymentRequired = paymentRequired,
-            paymentStatus = initialStatus,
-            paymentIntentId = null,
-            qrTokenHash = tokenHash,
-            qrToken = rawToken,
-            checkedInAt = null,
-            checkedInBy = null,
-            updatedAt = now
+        val data: Map<String, Any?> = mapOf(
+            "id" to id,
+            "eventId" to eventId,
+            "userId" to userId,
+            "userName" to userName,
+            "issuedAt" to now,
+            "paymentRequired" to paymentRequired,
+            "paymentStatus" to if (paymentRequired) PaymentStatus.PENDING.value else PaymentStatus.CONFIRMED.value,
+            "paymentIntentId" to null,
+            "qrTokenHash" to tokenHash,
+            "qrToken" to rawToken,
+            "checkedInAt" to null,
+            "checkedInBy" to null,
+            "updatedAt" to now
         )
 
-        docRef.set(ticket).await()
-        return CreateOrGetTicketResult(ticket = ticket, rawTokenForQr = rawToken)
-    }
+        docRef.set(data, SetOptions.merge()).await()
 
-    override suspend fun setPaymentPending(ticketId: String, paymentIntentId: String?) {
-        val updates = hashMapOf<String, Any>(
-            "paymentStatus" to PaymentStatus.PENDING.value,
-            "updatedAt" to FieldValue.serverTimestamp()
-        )
-        if (paymentIntentId != null) updates["paymentIntentId"] = paymentIntentId
-        ticketsCol.document(ticketId).update(updates).await()
-    }
+        val createdSnap = docRef.get().await()
+        val created = createdSnap.toObject(Ticket::class.java)
+            ?: throw IllegalStateException("Ticket was created but could not be parsed")
 
-    override suspend fun markCheckedIn(ticketId: String, organizerUid: String) {
-        ticketsCol.document(ticketId).update(
-            mapOf(
-                "checkedInAt" to FieldValue.serverTimestamp(),
-                "checkedInBy" to organizerUid,
-                "updatedAt" to FieldValue.serverTimestamp()
-            )
-        ).await()
+        return CreateOrGetTicketResult(created, rawToken)
     }
 
     override suspend fun rotateQrToken(ticketId: String): String {
+        val docRef = ticketsCol.document(ticketId)
+        val snap = docRef.get().await()
+        if (!snap.exists()) throw IllegalStateException("Ticket not found")
+
         val rawToken = TicketTokenUtil.generateTokenUrlSafe()
         val tokenHash = TicketTokenUtil.sha256Hex(rawToken)
+        val now = Timestamp.now()
 
-        ticketsCol.document(ticketId).update(
+        docRef.set(
             mapOf(
-                "qrToken" to rawToken,
                 "qrTokenHash" to tokenHash,
-                "updatedAt" to FieldValue.serverTimestamp()
-            )
+                "qrToken" to rawToken,
+                "updatedAt" to now
+            ),
+            SetOptions.merge()
         ).await()
 
         return rawToken
-    }
-
-    override suspend fun getMyTicketForEvent(eventId: String, userId: String): Ticket? {
-        val snap = ticketsCol
-            .whereEqualTo("eventId", eventId)
-            .whereEqualTo("userId", userId)
-            .limit(1)
-            .get()
-            .await()
-
-        if (snap.isEmpty) return null
-        val doc = snap.documents.first()
-        return doc.toObject<Ticket>()?.copy(id = doc.id)
-    }
-
-    override fun observeMyTicketForEvent(eventId: String, userId: String): Flow<Ticket?> = callbackFlow {
-        val query = ticketsCol
-            .whereEqualTo("eventId", eventId)
-            .whereEqualTo("userId", userId)
-            .limit(1)
-
-        val reg = query.addSnapshotListener { snap, err ->
-            if (err != null) {
-                trySend(null)
-                return@addSnapshotListener
-            }
-            if (snap == null || snap.isEmpty) {
-                trySend(null)
-                return@addSnapshotListener
-            }
-            val doc = snap.documents.first()
-            val t = doc.toObject<Ticket>()?.copy(id = doc.id)
-            trySend(t)
-        }
-
-        awaitClose { reg.remove() }
-    }
-
-    override fun observeTicketsForEvent(eventId: String): Flow<List<Ticket>> = callbackFlow {
-        val query = ticketsCol
-            .whereEqualTo("eventId", eventId)
-            .orderBy("issuedAt", Query.Direction.DESCENDING)
-
-        val reg = query.addSnapshotListener { snap, err ->
-            if (err != null) {
-                trySend(emptyList())
-                return@addSnapshotListener
-            }
-            val list = snap?.documents?.mapNotNull { d ->
-                d.toObject<Ticket>()?.copy(id = d.id)
-            } ?: emptyList()
-
-            trySend(list)
-        }
-
-        awaitClose { reg.remove() }
     }
 }

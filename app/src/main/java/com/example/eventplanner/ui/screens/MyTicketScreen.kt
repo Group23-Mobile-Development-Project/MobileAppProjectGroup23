@@ -59,11 +59,7 @@ fun MyTicketScreen(
     val error by ticketViewModel.error.collectAsState()
 
     val ticketingEnabled = event?.ticketingEnabled == true
-    val paymentRequired = if (event == null) {
-        false
-    } else {
-        event!!.ticketingEnabled && event!!.ticketType == TicketType.PAID.value
-    }
+    val paymentRequired = event?.let { it.ticketingEnabled && it.ticketType == TicketType.PAID.value } ?: false
 
     val statusText = ticketStatusText(ticket, ticketingEnabled, paymentRequired)
 

@@ -3,7 +3,15 @@ package com.example.eventplanner.data.repository
 import com.example.eventplanner.data.model.Ticket
 import kotlinx.coroutines.flow.Flow
 
+data class CreateOrGetTicketResult(
+    val ticket: Ticket,
+    val rawTokenForQr: String?
+)
+
 interface TicketRepository {
+    fun observeMyTicketForEvent(eventId: String, userId: String): Flow<Ticket?>
+
+    suspend fun getMyTicketForEvent(eventId: String, userId: String): Ticket?
 
     suspend fun createOrGetTicket(
         eventId: String,
@@ -12,34 +20,5 @@ interface TicketRepository {
         paymentRequired: Boolean
     ): CreateOrGetTicketResult
 
-    suspend fun setPaymentPending(
-        ticketId: String,
-        paymentIntentId: String?
-    )
-
-    suspend fun markCheckedIn(
-        ticketId: String,
-        organizerUid: String
-    )
-
-    // rotates QR token (raw token + hash) for an existing ticket
-    // returns the new raw token so the UI can render a new QR code immediately
     suspend fun rotateQrToken(ticketId: String): String
-
-    // one-shot fetch used for manual refresh
-    suspend fun getMyTicketForEvent(eventId: String, userId: String): Ticket?
-
-    fun observeMyTicketForEvent(
-        eventId: String,
-        userId: String
-    ): Flow<Ticket?>
-
-    fun observeTicketsForEvent(
-        eventId: String
-    ): Flow<List<Ticket>>
 }
-
-data class CreateOrGetTicketResult(
-    val ticket: Ticket,
-    val rawTokenForQr: String?
-)
