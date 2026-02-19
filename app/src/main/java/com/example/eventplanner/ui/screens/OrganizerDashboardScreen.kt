@@ -33,6 +33,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.eventplanner.R
 import com.example.eventplanner.viewmodel.OrganizerViewModel
 import com.example.eventplanner.viewmodel.TicketUi
 import java.text.SimpleDateFormat
@@ -57,7 +59,10 @@ fun OrganizerDashboardScreen(
     navController: NavHostController? = null,
     viewModel: OrganizerViewModel = viewModel()
 ) {
-    viewModel.loadTicketsForEvent(eventId)
+    // important: avoid calling loadTicketsForEvent() directly in composition
+    LaunchedEffect(eventId) {
+        viewModel.loadTicketsForEvent(eventId)
+    }
 
     val tickets by viewModel.tickets.collectAsState(initial = emptyList())
     val isLoading by viewModel.isLoading.collectAsState(initial = false)
@@ -83,12 +88,13 @@ fun OrganizerDashboardScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController?.navigateUp() }) {
                         Icon(
-                            painter = androidx.compose.ui.res.painterResource(id = com.example.eventplanner.R.drawable.ic_arrow_back),
+                            painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_arrow_back),
                             contentDescription = "Back"
                         )
                     }
                 },
                 actions = {
+                    // opens your QrScannerScreen via AppNavGraph route: "qrScanner/{eventId}"
                     IconButton(onClick = { navController?.navigate("qrScanner/$eventId") }) {
                         Icon(
                             imageVector = Icons.Default.QrCodeScanner,
@@ -114,10 +120,16 @@ fun OrganizerDashboardScreen(
 
                 error != null -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Error: $error",
-                            color = MaterialTheme.colorScheme.error
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Error: $error",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(onClick = { viewModel.loadTicketsForEvent(eventId) }) {
+                                Text("Retry")
+                            }
+                        }
                     }
                 }
 
@@ -156,7 +168,9 @@ fun OrganizerDashboardScreen(
                         items(filteredTickets) { ticket ->
                             TicketItem(
                                 ticket = ticket,
-                                onCheckInClick = { viewModel.markTicketCheckedIn(ticket.id) }
+                                onCheckInClick = {
+                                    viewModel.markTicketCheckedIn(ticket.id)
+                                }
                             )
                         }
                     }

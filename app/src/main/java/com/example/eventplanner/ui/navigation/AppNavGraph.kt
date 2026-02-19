@@ -43,8 +43,10 @@ import com.example.eventplanner.ui.screens.MyTicketScreen
 import com.example.eventplanner.ui.screens.OrganizerDashboardScreen
 import com.example.eventplanner.ui.screens.ParticipationScreen
 import com.example.eventplanner.ui.screens.ProfileScreen
+import com.example.eventplanner.ui.screens.QrScannerScreen
 import com.example.eventplanner.ui.screens.SignupScreen
 import com.example.eventplanner.viewmodel.EventViewModel
+import com.example.eventplanner.viewmodel.OrganizerViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
@@ -70,6 +72,7 @@ fun AppNavGraph(
         currentRoute?.startsWith("eventDetail/") == true -> "Event Details"
         currentRoute?.startsWith("editEvent/") == true -> "Edit Event"
         currentRoute?.startsWith("myTicket/") == true -> "My Ticket"
+        currentRoute?.startsWith("qrScanner/") == true -> "QR Check-in"
         else -> "Event Planner"
     }
 
@@ -171,6 +174,19 @@ fun AppNavGraph(
                 composable("myTicket/{eventId}") { entry ->
                     val eventId = entry.arguments?.getString("eventId") ?: ""
                     MyTicketScreen(eventId = eventId, navController = navController)
+                }
+
+                composable("qrScanner/{eventId}") { entry ->
+                    val eventId = entry.arguments?.getString("eventId") ?: ""
+                    val organizerVm: OrganizerViewModel = viewModel()
+
+                    QrScannerScreen(
+                        eventId = eventId,
+                        onBack = { navController.popBackStack() },
+                        onQrScanned = { raw ->
+                            organizerVm.checkInWithQr(eventId = eventId, raw = raw)
+                        }
+                    )
                 }
             }
         }

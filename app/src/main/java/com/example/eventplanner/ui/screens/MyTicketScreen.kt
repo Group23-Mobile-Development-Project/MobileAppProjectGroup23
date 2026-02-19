@@ -78,6 +78,17 @@ fun MyTicketScreen(
         tokenWriteError = null
         ticket = null
 
+        // IMPORTANT:
+        // OrganizerViewModel QR check-in expects tickets under:
+        // events/{eventId}/tickets/{ticketId}
+        // and your QR payload uses ticketId + token + eventId.
+        //
+        // Your current booking flow often stores ticket as:
+        // events/{eventId}/tickets/{uid}
+        // That is OK IF you treat "ticketId" as doc.id (which becomes uid).
+        //
+        // This screen will first try subcollection (doc id = uid), then top-level fallback.
+
         val subRef = db.collection("events").document(eventId).collection("tickets").document(uid)
         val topLevelId = "${eventId}_${uid}"
         val topRef = db.collection("tickets").document(topLevelId)
@@ -85,13 +96,19 @@ fun MyTicketScreen(
         subRef.get()
             .addOnSuccessListener { subDoc ->
                 if (subDoc.exists()) {
+                    val resolvedEventId = subDoc.getString("eventId") ?: eventId
+                    val resolvedUserId = subDoc.getString("userId") ?: uid
+
                     ticket = MyTicketUi(
                         docPath = subRef.path,
-                        ticketId = subDoc.id,
-                        eventId = subDoc.getString("eventId") ?: eventId,
-                        userId = subDoc.getString("userId") ?: uid,
-                        userName = subDoc.getString("userName"),
-                        qrToken = subDoc.getString("qrToken") ?: subDoc.getString("token"),
+                        ticketId = subDoc.id, // doc id becomes ticketId in QR payload
+                        eventId = resolvedEventId,
+                        userId = resolvedUserId,
+                        userName = subDoc.getString("userName")
+                            ?: subDoc.getString("attendeeName")
+                            ?: subDoc.getString("name"),
+                        qrToken = subDoc.getString("qrToken")
+                            ?: subDoc.getString("token"),
                         checkedInAt = subDoc.get("checkedInAt"),
                         bookedAt = subDoc.get("bookedAt")
                     )
@@ -100,13 +117,19 @@ fun MyTicketScreen(
                     topRef.get()
                         .addOnSuccessListener { topDoc ->
                             if (topDoc.exists()) {
+                                val resolvedEventId = topDoc.getString("eventId") ?: eventId
+                                val resolvedUserId = topDoc.getString("userId") ?: uid
+
                                 ticket = MyTicketUi(
                                     docPath = topRef.path,
-                                    ticketId = topDoc.id,
-                                    eventId = topDoc.getString("eventId") ?: eventId,
-                                    userId = topDoc.getString("userId") ?: uid,
-                                    userName = topDoc.getString("userName"),
-                                    qrToken = topDoc.getString("qrToken") ?: topDoc.getString("token"),
+                                    ticketId = topDoc.id, // doc id becomes ticketId in QR payload
+                                    eventId = resolvedEventId,
+                                    userId = resolvedUserId,
+                                    userName = topDoc.getString("userName")
+                                        ?: topDoc.getString("attendeeName")
+                                        ?: topDoc.getString("name"),
+                                    qrToken = topDoc.getString("qrToken")
+                                        ?: topDoc.getString("token"),
                                     checkedInAt = topDoc.get("checkedInAt"),
                                     bookedAt = topDoc.get("bookedAt")
                                 )
@@ -133,12 +156,24 @@ fun MyTicketScreen(
 
         tokenWriteError = null
 
-        ref.set(mapOf("qrToken" to newToken), SetOptions.merge())
+        // Write BOTH fields for compatibility:
+        // - qrToken used by ticket creation in your UI
+        // - token used by OrganizerViewModel.checkInWithQr (it checks token OR qrToken)
+        ref.set(
+            mapOf(
+                "qrToken" to newToken,
+                "token" to newToken,
+                "eventId" to t.eventId,
+                "userId" to t.userId,
+                "userName" to (t.userName ?: "")
+            ),
+            SetOptions.merge()
+        )
             .addOnSuccessListener {
                 ticket = t.copy(qrToken = newToken)
             }
             .addOnFailureListener { ex ->
-                tokenWriteError = ex.message ?: "Failed to save qrToken"
+                tokenWriteError = ex.message ?: "Failed to save qrToken/token"
             }
     }
 
@@ -197,7 +232,7 @@ fun MyTicketScreen(
                 Text("QR token is missing.")
                 if (tokenWriteError != null) {
                     Text("Reason: ${tokenWriteError ?: ""}", color = MaterialTheme.colorScheme.error)
-                    Text("If this says permission denied, you must rebook after updating booking code or change Firestore rules.")
+                    Text("If this says permission denied, your Firestore rules may block updating tickets.")
                 }
 
                 Button(
@@ -211,6 +246,7 @@ fun MyTicketScreen(
                 return@Column
             }
 
+            // IMPORTANT: use YOUR QrCodeUtil payload format (v1|ticketId=...|eventId=...|token=...)
             val payload = remember(t.ticketId, t.eventId, token) {
                 QrCodeUtil.buildPayload(ticketId = t.ticketId, eventId = t.eventId, token = token)
             }

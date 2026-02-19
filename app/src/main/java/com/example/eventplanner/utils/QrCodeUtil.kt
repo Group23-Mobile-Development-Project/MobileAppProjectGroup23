@@ -2,6 +2,7 @@ package com.example.eventplanner.utils
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.common.BitMatrix
@@ -25,8 +26,11 @@ object QrCodeUtil {
         return bmp
     }
 
+    // v1 payload, url-encoded values (safer)
     fun buildPayload(ticketId: String, eventId: String, token: String): String {
-        // simple v1 payload; no personal data
-        return "v1|ticketId=$ticketId|eventId=$eventId|token=$token"
+        val tId = Uri.encode(ticketId)
+        val eId = Uri.encode(eventId)
+        val tok = Uri.encode(token)
+        return "v1|ticketId=$tId|eventId=$eId|token=$tok"
     }
 }
