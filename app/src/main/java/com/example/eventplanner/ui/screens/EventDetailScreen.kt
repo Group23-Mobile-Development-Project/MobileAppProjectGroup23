@@ -36,6 +36,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.example.eventplanner.utils.NotificationHelper
 import java.security.SecureRandom
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -192,6 +193,13 @@ fun EventDetailScreen(
             actionInProgress = false
             rsvpStatus = status
             Toast.makeText(ctx, "RSVP updated: $status", Toast.LENGTH_SHORT).show()
+
+            // Show local notification for RSVP update
+            NotificationHelper.showNotification(
+                ctx,
+                "RSVP Updated",
+                "You have marked yourself as $status for ${title ?: "the event"}"
+            )
         }.addOnFailureListener { ex ->
             actionInProgress = false
             Toast.makeText(ctx, ex.message ?: "Failed to update RSVP", Toast.LENGTH_SHORT).show()
@@ -258,6 +266,14 @@ fun EventDetailScreen(
             isBooked = true
             rsvpStatus = "attending"
             Toast.makeText(ctx, "Ticket booked and marked attending", Toast.LENGTH_SHORT).show()
+
+            // Show local notification for successful booking
+            NotificationHelper.showNotification(
+                ctx,
+                "Booking Confirmed",
+                "You have successfully booked tickets for ${title ?: "the event"}"
+            )
+
             navController.navigate("myTicket/$eventId")
         }.addOnFailureListener { ex ->
             actionInProgress = false
@@ -315,6 +331,13 @@ fun EventDetailScreen(
             isBooked = false
             rsvpStatus = "not attending"
             Toast.makeText(ctx, "Booking cancelled and marked not attending", Toast.LENGTH_SHORT).show()
+
+            // Show local notification for cancellation
+            NotificationHelper.showNotification(
+                ctx,
+                "Booking Cancelled",
+                "You have cancelled your booking for ${title ?: "the event"} and marked as not attending"
+            )
         }.addOnFailureListener { ex ->
             actionInProgress = false
             Toast.makeText(ctx, ex.message ?: "Cancel failed", Toast.LENGTH_SHORT).show()

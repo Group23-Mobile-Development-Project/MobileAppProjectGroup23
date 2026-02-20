@@ -112,5 +112,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+
+    // notification
+    implementation(libs.firebase.messaging.ktx.v2340)
+
     implementation("com.google.zxing:core:3.5.3")
 }
